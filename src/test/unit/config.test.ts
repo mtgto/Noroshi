@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { resolvePlayerCommand, buildPlayCommand, shellQuote, clampNonNegative } from "../../config";
+import {
+  resolvePlayerCommand,
+  buildPlayCommand,
+  shellQuote,
+  clampNonNegative,
+  isAbsolutePath,
+} from "../../config";
 
 describe("resolvePlayerCommand", () => {
   it("respects an explicit setting", () => {
@@ -45,5 +51,19 @@ describe("clampNonNegative", () => {
   it("passes 0 and positive values through", () => {
     expect(clampNonNegative(0, 3000)).toBe(0);
     expect(clampNonNegative(250, 3000)).toBe(250);
+  });
+});
+
+describe("isAbsolutePath", () => {
+  it("recognizes POSIX absolute paths", () => {
+    expect(isAbsolutePath("/home/u/.claude/events.jsonl")).toBe(true);
+  });
+  it("recognizes Windows drive-letter paths (both slash styles)", () => {
+    expect(isAbsolutePath("C:\\tmp\\events.jsonl")).toBe(true);
+    expect(isAbsolutePath("C:/tmp/events.jsonl")).toBe(true);
+  });
+  it("treats relative paths as not absolute", () => {
+    expect(isAbsolutePath(".claude/noroshi-events.jsonl")).toBe(false);
+    expect(isAbsolutePath("a/b.jsonl")).toBe(false);
   });
 });

@@ -1,5 +1,10 @@
 import * as vscode from "vscode";
-import { resolvePlayerCommand, clampNonNegative, type NoroshiSettings } from "./config";
+import {
+  resolvePlayerCommand,
+  clampNonNegative,
+  isAbsolutePath,
+  type NoroshiSettings,
+} from "./config";
 import { VSCodeFileSystem } from "./fileSystem";
 import { DrainCore } from "./eventSource";
 import { WorkspaceEventSource } from "./workspaceEventSource";
@@ -140,7 +145,7 @@ async function start(context: vscode.ExtensionContext): Promise<void> {
 }
 
 function resolveEventsUri(eventsFile: string, folder: vscode.Uri): vscode.Uri {
-  if (isAbsolute(eventsFile)) return folder.with({ path: eventsFile });
+  if (isAbsolutePath(eventsFile)) return folder.with({ path: toUriPath(eventsFile) });
   return vscode.Uri.joinPath(folder, ...eventsFile.split("/"));
 }
 
@@ -148,14 +153,17 @@ function resolveWatchPattern(
   eventsFile: string,
   folder: vscode.WorkspaceFolder,
 ): vscode.RelativePattern {
-  if (isAbsolute(eventsFile)) {
-    const dir = folder.uri.with({ path: eventsFile.substring(0, eventsFile.lastIndexOf("/")) });
-    const base = eventsFile.substring(eventsFile.lastIndexOf("/") + 1);
-    return new vscode.RelativePattern(dir, base);
+  if (isAbsolutePath(eventsFile)) {
+    const uriPath = toUriPath(eventsFile);
+    const slash = uriPath.lastIndexOf("/");
+    const dir = folder.uri.with({ path: uriPath.substring(0, slash) });
+    return new vscode.RelativePattern(dir, uriPath.substring(slash + 1));
   }
   return new vscode.RelativePattern(folder, eventsFile);
 }
 
-function isAbsolute(p: string): boolean {
-  return p.startsWith("/");
+/** Normalize an absolute filesystem path to a URI path (forward slashes, leading slash). */
+function toUriPath(p: string): string {
+  const norm = p.replace(/\\/g, "/");
+  return norm.startsWith("/") ? norm : "/" + norm;
 }

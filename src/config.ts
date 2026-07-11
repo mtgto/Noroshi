@@ -50,3 +50,8 @@ export function shellQuote(path: string, platform: NodeJS.Platform): string {
 export function clampNonNegative(n: number, fallback: number): number {
   return Number.isFinite(n) && n >= 0 ? n : fallback;
 }
+
+/** True for POSIX absolute (/...) and Windows drive-letter absolute (C:\... or C:/...) paths. */
+export function isAbsolutePath(p: string): boolean {
+  return p.startsWith("/") || /^[a-zA-Z]:[\\/]/.test(p);
+}

@@ -7,6 +7,8 @@ export class DrainCore {
   private inFlight = false;
   private pending = false;
   private pendingEmit = false;
+  private orphan = false; // a draining file whose read failed, awaiting retry
+  private renameFailing = false; // suppresses duplicate rename-error logs
 
   constructor(
     private readonly fs: FileSystem,
@@ -51,24 +53,54 @@ export class DrainCore {
 
   private async drainOnce(emit: boolean): Promise<void> {
     const drainingId = this.eventsId + DRAINING_SUFFIX;
+
+    // Recover an orphaned draining file whose read failed on a previous cycle.
+    if (this.orphan) {
+      await this.consumeDraining(drainingId, emit);
+      if (this.orphan) return; // still failing; don't clobber it with a fresh rename
+    }
+
     try {
       await this.fs.rename(this.eventsId, drainingId);
+      this.renameFailing = false;
     } catch (err) {
-      if ((err as NodeJS.ErrnoException)?.code === "ENOENT") return; // empty or lost the race
-      if (isNotFound(err)) return; // VSCode FileSystemError not-found variants
-      this.log(`drain rename error: ${describe(err)}`);
+      if (isMissing(err)) {
+        this.renameFailing = false;
+        return; // empty file, or lost the atomic-rename race
+      }
+      if (!this.renameFailing) {
+        this.log(`drain rename error: ${describe(err)}`);
+        this.renameFailing = true; // log a persistent failure only once
+      }
       return;
     }
 
-    let content = "";
+    await this.consumeDraining(drainingId, emit);
+  }
+
+  // Reads, emits, and deletes the draining file. On a read error the file is left
+  // in place (orphan) so the next cycle can retry it, preventing event loss.
+  private async consumeDraining(drainingId: string, emit: boolean): Promise<void> {
+    let content: string;
     try {
       content = await this.fs.readFile(drainingId);
     } catch (err) {
-      this.log(`drain read error: ${describe(err)}`);
+      if (isMissing(err)) {
+        this.orphan = false;
+        return;
+      }
+      if (!this.orphan) {
+        this.log(`drain read error (will retry next cycle): ${describe(err)}`);
+      }
+      this.orphan = true;
+      return;
     }
     await this.fs.delete(drainingId);
+    this.orphan = false;
+    if (emit) this.emitLines(content);
+  }
 
-    if (!emit) return;
+  private emitLines(content: string): void {
     for (const line of content.split("\n")) {
       const trimmed = line.trim();
       if (!trimmed) continue;
@@ -86,6 +118,11 @@ export class DrainCore {
       this.onEvent(parsed);
     }
   }
+}
+
+function isMissing(err: unknown): boolean {
+  const code = (err as { code?: string })?.code ?? "";
+  return code === "ENOENT" || isNotFound(err);
 }
 
 function isNotFound(err: unknown): boolean {

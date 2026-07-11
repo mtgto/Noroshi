@@ -73,6 +73,33 @@ describe("DrainCore.drain", () => {
     expect(await fs.stat(EV)).toBeNull();
   });
 
+  it("preserves and later delivers events when a read transiently fails", async () => {
+    const { fs, events, core } = make({ [EV]: '{"event":"stop"}\n' });
+    const orig = fs.readFile.bind(fs);
+    let failOnce = true;
+    vi.spyOn(fs, "readFile").mockImplementation(async (id: string) => {
+      if (failOnce && id === EV + DRAINING_SUFFIX && fs.has(EV + DRAINING_SUFFIX)) {
+        failOnce = false;
+        throw new Error("transient read error");
+      }
+      return orig(id);
+    });
+    await core.drain(); // rename ok, read fails -> orphan preserved, nothing emitted
+    expect(events).toEqual([]);
+    expect(fs.has(EV + DRAINING_SUFFIX)).toBe(true);
+    await core.drain(); // recovers the orphan
+    expect(events).toEqual([{ event: "stop" }]);
+    expect(fs.has(EV + DRAINING_SUFFIX)).toBe(false);
+  });
+
+  it("logs a persistent rename error only once across cycles", async () => {
+    const { fs, logs, core } = make({ [EV]: '{"event":"stop"}\n' });
+    vi.spyOn(fs, "rename").mockRejectedValue(new Error("EPERM: locked"));
+    await core.drain();
+    await core.drain();
+    expect(logs.filter((l) => /rename error/.test(l)).length).toBe(1);
+  });
+
   it("a drain() arriving during discard() still plays its events", async () => {
     const { fs, events, core } = make({ [EV]: '{"event":"stop"}\n' });
     const orig = fs.readFile.bind(fs);
