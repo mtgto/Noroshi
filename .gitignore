@@ -4,3 +4,6 @@ node_modules/
 out/
 .superpowers/
 .vscode-test/
+
+# build artifacts
+*.vsix
