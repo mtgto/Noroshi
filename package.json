@@ -1,0 +1,96 @@
+{
+  "name": "noroshi",
+  "displayName": "Noroshi",
+  "description": "Play a sound when Claude Code is waiting for you or finishes, even in Remote Containers.",
+  "version": "0.0.1",
+  "publisher": "mtgto",
+  "license": "MIT",
+  "engines": { "vscode": "^1.84.0" },
+  "extensionKind": ["ui"],
+  "categories": ["Other"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "noroshi.openSetupGuide",
+        "title": "Noroshi: セットアップ手順を開く"
+      }
+    ],
+    "configuration": {
+      "title": "Noroshi",
+      "properties": {
+        "noroshi.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Noroshi の効果音通知を有効にする。"
+        },
+        "noroshi.eventsFile": {
+          "type": "string",
+          "default": ".claude/noroshi-events.jsonl",
+          "description": "監視するイベントファイル。相対パスはワークスペース基準、絶対パスはリモート(Pod)の絶対パスとして解釈。"
+        },
+        "noroshi.sounds.notification": {
+          "type": "string",
+          "default": "",
+          "description": "応答待ち時に鳴らす音声ファイル。空なら同梱 WAV。"
+        },
+        "noroshi.sounds.stop": {
+          "type": "string",
+          "default": "",
+          "description": "処理完了時に鳴らす音声ファイル。空なら同梱 WAV。"
+        },
+        "noroshi.playerCommand": {
+          "type": "string",
+          "default": "",
+          "description": "再生コマンドテンプレート。${file} が音声ファイルパスに置換される。空なら OS 既定 (afplay/paplay/PowerShell)。"
+        },
+        "noroshi.pollInterval": {
+          "type": "number",
+          "default": 3000,
+          "description": "watcher の取りこぼしを拾う安全網ポーリング間隔 (ms)。0 で無効。"
+        },
+        "noroshi.debounceMs": {
+          "type": "number",
+          "default": 250,
+          "description": "同種イベントを鳴らしてからこの時間内 (ms) の同種イベントは鳴らさない。0 で無効。"
+        },
+        "noroshi.entrypointFilter": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [],
+          "description": "イベントの entrypoint 判別子でフィルタ。空なら全て鳴らす。例: [\"vscode\"] で拡張版セッションのみ。"
+        },
+        "noroshi.statusBar.show": {
+          "type": "boolean",
+          "default": true,
+          "description": "ステータスバーに Noroshi の状態を表示する。"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:integration": "vscode-test",
+    "lint": "oxlint",
+    "format": "oxfmt src scripts",
+    "format:check": "oxfmt --check src scripts",
+    "gen-sounds": "node scripts/gen-sounds.js",
+    "vscode:prepublish": "npm run compile"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/mocha": "^10.0.0",
+    "@types/node": "^24.0.0",
+    "@types/vscode": "^1.84.0",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.4.1",
+    "oxfmt": "^0.58.0",
+    "oxlint": "^1.73.0",
+    "typescript": "^7.0.2",
+    "vitest": "^2.1.0"
+  }
+}

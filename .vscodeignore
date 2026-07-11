@@ -1,0 +1,14 @@
+.vscode/**
+src/**
+scripts/**
+.claude/**
+docs/**
+.superpowers/**
+**/*.map
+**/tsconfig.json
+**/vitest.config.ts
+**/.vscode-test.mjs
+**/.npmrc
+node_modules/**
+!out/**
+out/test/**
