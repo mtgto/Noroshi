@@ -61,7 +61,7 @@ Noroshi (ローカル実行の UI 拡張) が `vscode.workspace.fs` でそれを
 | `noroshi.playerCommand` | `""` | 再生コマンド。`${file}` 置換。空=OS 既定 |
 | `noroshi.pollInterval` | `3000` | 安全網ポーリング (ms)。0 で無効 |
 | `noroshi.debounceMs` | `250` | 同種連打の抑制窓 (ms) |
-| `noroshi.entrypointFilter` | `[]` | 例 `["vscode"]` で拡張版セッションのみ再生 |
+| `noroshi.entrypointFilter` | `[]` | 例 `["claude-vscode"]` で拡張版セッションのみ再生 |
 | `noroshi.statusBar.show` | `true` | ステータスバー表示 |
 
 ### 音声フォーマット
@@ -102,7 +102,7 @@ macOS は afplay が mp3/m4a も再生する。mp3/m4a を既定にしたい場�
 }
 ```
 
-確認した拡張版の値を `noroshi.entrypointFilter` に設定する (例 `["vscode"]`)。
+確認した拡張版の値を `noroshi.entrypointFilter` に設定する (拡張のサイドパネルは `claude-vscode`。例 `["claude-vscode"]`)。
 
 ## 手動スモーク (Remote Container)
 

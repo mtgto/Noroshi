@@ -68,7 +68,7 @@ configured (click it to open this guide).
 | `noroshi.playerCommand` | `""` | Playback command. `${file}` is substituted. Empty = OS default |
 | `noroshi.pollInterval` | `3000` | Safety-net polling interval (ms). 0 disables it |
 | `noroshi.debounceMs` | `250` | Suppression window (ms) for repeats of the same event |
-| `noroshi.entrypointFilter` | `[]` | e.g. `["vscode"]` to play only extension sessions |
+| `noroshi.entrypointFilter` | `[]` | e.g. `["claude-vscode"]` to play only extension sessions |
 | `noroshi.statusBar.show` | `true` | Show the status bar item |
 
 ### Audio format
@@ -93,7 +93,8 @@ To play only for the extension (side panel) sessions and not for `claude` in the
 integrated terminal, first measure the discriminator. Temporarily install this
 hook, complete a response in both the extension side panel and the integrated
 terminal `claude`, then diff the two blocks in `~/noroshi-env-debug.txt` to find
-a variable that reliably differs (candidate: `CLAUDE_CODE_ENTRYPOINT`).
+a variable that reliably differs (candidate: `CLAUDE_CODE_ENTRYPOINT`, which is
+`claude-vscode` for the extension side panel).
 
 ```json
 {
@@ -112,7 +113,7 @@ a variable that reliably differs (candidate: `CLAUDE_CODE_ENTRYPOINT`).
 }
 ```
 
-Set the extension's value into `noroshi.entrypointFilter` (e.g. `["vscode"]`).
+Set the extension's value into `noroshi.entrypointFilter` (e.g. `["claude-vscode"]`).
 
 ## Local development
 

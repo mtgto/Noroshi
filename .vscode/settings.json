@@ -1,3 +1,7 @@
 {
-  "biome.enabled": false
+  "biome.enabled": false,
+  "noroshi.enabled": false,
+  "cSpell.words": [
+    "Noroshi"
+  ]
 }

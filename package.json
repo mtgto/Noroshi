@@ -59,7 +59,7 @@
           "type": "array",
           "items": { "type": "string" },
           "default": [],
-          "description": "Filter playback by the event entrypoint discriminator. Empty plays everything. Example: [\"vscode\"] plays only extension sessions."
+          "description": "Filter playback by the event entrypoint discriminator. Empty plays everything. Example: [\"claude-vscode\"] plays only VSCode extension sessions."
         },
         "noroshi.statusBar.show": {
           "type": "boolean",
