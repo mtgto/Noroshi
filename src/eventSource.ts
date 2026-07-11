@@ -6,6 +6,7 @@ export const DRAINING_SUFFIX = ".draining";
 export class DrainCore {
   private inFlight = false;
   private pending = false;
+  private pendingEmit = false;
 
   constructor(
     private readonly fs: FileSystem,
@@ -27,14 +28,22 @@ export class DrainCore {
   private async runSerialized(emit: boolean): Promise<void> {
     if (this.inFlight) {
       this.pending = true;
+      // Propagate the emit intent: if any coalesced caller wants to play, the
+      // re-run must play. Otherwise a drain() overlapping a discard() would be
+      // silently swallowed.
+      if (emit) this.pendingEmit = true;
       return;
     }
     this.inFlight = true;
     try {
-      do {
+      let curEmit = emit;
+      for (;;) {
         this.pending = false;
-        await this.drainOnce(emit);
-      } while (this.pending);
+        this.pendingEmit = false;
+        await this.drainOnce(curEmit);
+        if (!this.pending) break;
+        curEmit = this.pendingEmit;
+      }
     } finally {
       this.inFlight = false;
     }

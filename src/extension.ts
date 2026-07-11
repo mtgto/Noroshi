@@ -16,6 +16,9 @@ const README_URL = "https://github.com/mtgto/noroshi#setup";
 
 let disposer: vscode.Disposable[] = [];
 let output: vscode.OutputChannel;
+// Bumped on every start(); an in-flight run that finds itself superseded aborts
+// after each await so overlapping config-change rebuilds don't race the disposer.
+let generation = 0;
 
 export function activate(context: vscode.ExtensionContext): void {
   output = vscode.window.createOutputChannel("Noroshi");
@@ -64,6 +67,7 @@ function readSettings(): NoroshiSettings {
 }
 
 async function start(context: vscode.ExtensionContext): Promise<void> {
+  const gen = ++generation;
   disposeAll();
   const s = readSettings();
 
@@ -92,6 +96,7 @@ async function start(context: vscode.ExtensionContext): Promise<void> {
     vscode.Uri.joinPath(folder.uri, ".claude", "settings.local.json").toString(),
   ];
   const configured = await checkHooksConfigured(fs, settingsIds, MARKER);
+  if (gen !== generation) return; // superseded by a newer start() during the await
   status.update(
     configured ? "active" : "unconfigured",
     configured
@@ -126,6 +131,7 @@ async function start(context: vscode.ExtensionContext): Promise<void> {
 
   // Discard events accumulated while the extension was stopped (do not play them).
   await drain.discard();
+  if (gen !== generation) return; // superseded by a newer start() during the await
 
   const source = new WorkspaceEventSource(fs, eventsUri, watchPattern, drain, s.pollInterval);
   source.start();

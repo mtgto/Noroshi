@@ -72,4 +72,22 @@ describe("DrainCore.drain", () => {
     expect(events).toEqual([]);
     expect(await fs.stat(EV)).toBeNull();
   });
+
+  it("a drain() arriving during discard() still plays its events", async () => {
+    const { fs, events, core } = make({ [EV]: '{"event":"stop"}\n' });
+    const orig = fs.readFile.bind(fs);
+    let injected = false;
+    vi.spyOn(fs, "readFile").mockImplementation(async (id: string) => {
+      const out = await orig(id);
+      if (!injected) {
+        injected = true;
+        fs.append(EV, '{"event":"notification"}\n'); // arrives while discard is draining
+        void core.drain(); // real event -> must be played, not discarded
+      }
+      return out;
+    });
+    await core.discard();
+    // the initial 'stop' is discarded (startup), but the drain()'s 'notification' plays
+    expect(events).toEqual([{ event: "notification" }]);
+  });
 });
