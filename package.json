@@ -11,6 +11,7 @@
   "keywords": ["claude", "claude-code", "notification", "sound", "hooks", "remote container"],
   "engines": { "vscode": "^1.84.0" },
   "extensionKind": ["ui"],
+  "icon": "media/icon.png",
   "categories": ["Other"],
   "activationEvents": ["onStartupFinished"],
   "main": "./out/extension.js",
