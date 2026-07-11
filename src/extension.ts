@@ -73,13 +73,13 @@ async function start(context: vscode.ExtensionContext): Promise<void> {
   status.setVisible(s.statusBarShow);
 
   if (!s.enabled) {
-    status.update("disabled", "Noroshi は無効です (noroshi.enabled)");
+    status.update("disabled", "Noroshi is disabled (noroshi.enabled)");
     return;
   }
 
   const folder = vscode.workspace.workspaceFolders?.[0];
   if (!folder) {
-    status.update("unconfigured", "フォルダが開かれていません");
+    status.update("unconfigured", "No folder is open");
     return;
   }
 
@@ -95,8 +95,8 @@ async function start(context: vscode.ExtensionContext): Promise<void> {
   status.update(
     configured ? "active" : "unconfigured",
     configured
-      ? `監視中: ${s.eventsFile}`
-      : "フック未設定です。クリックで設定手順を開きます (README)",
+      ? `Watching: ${s.eventsFile}`
+      : "Hook not configured. Click to open the setup guide (README).",
   );
 
   const bundled = (name: string) =>
@@ -124,7 +124,7 @@ async function start(context: vscode.ExtensionContext): Promise<void> {
     (m) => output.appendLine(m),
   );
 
-  // 起動時に溜まった古いイベントは破棄 (鳴らさない)
+  // Discard events accumulated while the extension was stopped (do not play them).
   await drain.discard();
 
   const source = new WorkspaceEventSource(fs, eventsUri, watchPattern, drain, s.pollInterval);

@@ -5,19 +5,19 @@ import { checkHooksConfigured } from "../../setupChecker";
 const MARKER = "# noroshi";
 
 describe("checkHooksConfigured", () => {
-  it("マーカーを含む settings があれば true", async () => {
+  it("true when a settings file contains the marker", async () => {
     const fs = new FakeFileSystem({ "mem://proj": `{"hooks":{}} # noroshi` });
     expect(await checkHooksConfigured(fs, ["mem://proj"], MARKER)).toBe(true);
   });
-  it("どの settings にもマーカーが無ければ false", async () => {
+  it("false when no settings file contains the marker", async () => {
     const fs = new FakeFileSystem({ "mem://proj": `{"hooks":{}}` });
     expect(await checkHooksConfigured(fs, ["mem://proj"], MARKER)).toBe(false);
   });
-  it("ファイル不在は skip し false", async () => {
+  it("skips a missing file and returns false", async () => {
     const fs = new FakeFileSystem();
     expect(await checkHooksConfigured(fs, ["mem://none"], MARKER)).toBe(false);
   });
-  it("複数のうち 1 つでも含めば true", async () => {
+  it("true when any one of several files contains the marker", async () => {
     const fs = new FakeFileSystem({
       "mem://a": `{}`,
       "mem://b": `whatever # noroshi here`,

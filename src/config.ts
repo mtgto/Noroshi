@@ -13,7 +13,7 @@ export interface NoroshiSettings {
 const WINDOWS_PLAYER =
   `powershell -NoProfile -c "(New-Object Media.SoundPlayer '` + "${file}" + `').PlaySync()"`;
 
-/** 設定が空なら OS 既定を返す。未知 OS は最も無難な paplay に寄せる。 */
+/** Return the OS default when the setting is empty. Fall back to paplay for unknown platforms. */
 export function resolvePlayerCommand(setting: string, platform: NodeJS.Platform): string {
   if (setting && setting.trim()) return setting;
   switch (platform) {
@@ -26,12 +26,12 @@ export function resolvePlayerCommand(setting: string, platform: NodeJS.Platform)
   }
 }
 
-/** テンプレの ${file} を実パスに置換する。 */
+/** Replace ${file} in the template with the actual path. */
 export function buildPlayCommand(template: string, filePath: string): string {
   return template.split("${file}").join(filePath);
 }
 
-/** 負値・非数は fallback、0 以上はそのまま。 */
+/** Negative or non-finite values fall back; 0 or positive pass through. */
 export function clampNonNegative(n: number, fallback: number): number {
   return Number.isFinite(n) && n >= 0 ? n : fallback;
 }

@@ -28,7 +28,7 @@ export class FakeFileSystem implements FileSystem {
     this.files.delete(id);
   }
 
-  // テスト補助: フックの追記を模す
+  // Test helper: simulate the hook appending a line.
   append(id: string, text: string): void {
     this.files.set(id, (this.files.get(id) ?? "") + text);
   }

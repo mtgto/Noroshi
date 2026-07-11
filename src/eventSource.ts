@@ -14,12 +14,12 @@ export class DrainCore {
     private readonly log: (msg: string) => void,
   ) {}
 
-  /** rename→read→delete。onEvent を発火。直列化 + 保留再実行 1 回に畳む。 */
+  /** rename -> read -> delete, then fire onEvent. Serialized, coalescing a pending re-run. */
   async drain(): Promise<void> {
     await this.runSerialized(true);
   }
 
-  /** 起動時破棄。onEvent は呼ばない。 */
+  /** Startup discard: drains the file but does not fire onEvent. */
   async discard(): Promise<void> {
     await this.runSerialized(false);
   }
@@ -45,8 +45,8 @@ export class DrainCore {
     try {
       await this.fs.rename(this.eventsId, drainingId);
     } catch (err) {
-      if ((err as NodeJS.ErrnoException)?.code === "ENOENT") return; // 空 or 競合の負け
-      if (isNotFound(err)) return; // VSCode FileSystemError の不在系
+      if ((err as NodeJS.ErrnoException)?.code === "ENOENT") return; // empty or lost the race
+      if (isNotFound(err)) return; // VSCode FileSystemError not-found variants
       this.log(`drain rename error: ${describe(err)}`);
       return;
     }

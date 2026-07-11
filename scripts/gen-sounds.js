@@ -1,10 +1,10 @@
-// 依存ゼロで短い WAV (44.1kHz/16bit/mono PCM) を合成する。
+// Synthesize short WAVs (44.1kHz/16bit/mono PCM) with zero dependencies.
 const fs = require("fs");
 const path = require("path");
 
 const SAMPLE_RATE = 44100;
 
-/** samples: Float32 相当の数値配列 (-1..1) を 16bit PCM WAV Buffer に変換 */
+/** Convert an array of numbers (-1..1) into a 16-bit PCM WAV Buffer. */
 function pcm16Wav(samples, sampleRate = SAMPLE_RATE) {
   const dataLen = samples.length * 2;
   const buf = Buffer.alloc(44 + dataLen);
@@ -28,7 +28,7 @@ function pcm16Wav(samples, sampleRate = SAMPLE_RATE) {
   return buf;
 }
 
-/** freq(Hz) を dur(秒) 鳴らす。attack/release エンベロープでクリック音を防ぐ。 */
+/** Play freq(Hz) for dur(seconds). Attack/release envelope avoids click artifacts. */
 function tone(freq, dur, gain = 0.5) {
   const n = Math.floor(SAMPLE_RATE * dur);
   const out = [];
@@ -47,9 +47,9 @@ function concat(...chunks) {
   return chunks.flat();
 }
 
-// 応答待ち: 落ち着いた 2 音 (ソ→ミ 風)。控えめ。
+// Waiting: a calm two-note motif. Understated.
 const waiting = concat(tone(660, 0.14, 0.45), tone(530, 0.2, 0.4));
-// 完了: 上昇するトライアド (ド→ミ→ソ)。達成感。
+// Done: an ascending triad (C-E-G). A sense of completion.
 const done = concat(tone(523, 0.11, 0.4), tone(659, 0.11, 0.4), tone(784, 0.24, 0.45));
 
 const outDir = path.join(__dirname, "..", "media", "sounds");
@@ -57,7 +57,7 @@ fs.mkdirSync(outDir, { recursive: true });
 fs.writeFileSync(path.join(outDir, "waiting.wav"), pcm16Wav(waiting));
 fs.writeFileSync(path.join(outDir, "done.wav"), pcm16Wav(done));
 
-// 生成物の健全性を自己チェック (RIFF/WAVE ヘッダ)。
+// Self-check the generated files (RIFF/WAVE header).
 for (const f of ["waiting.wav", "done.wav"]) {
   const b = fs.readFileSync(path.join(outDir, f));
   if (b.toString("ascii", 0, 4) !== "RIFF" || b.toString("ascii", 8, 12) !== "WAVE") {

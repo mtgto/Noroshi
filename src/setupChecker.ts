@@ -1,6 +1,6 @@
 import type { FileSystem } from "./fileSystem";
 
-/** settings ファイル群のいずれかが marker を含めば true (read-only)。 */
+/** Returns true if any of the settings files contains the marker (read-only). */
 export async function checkHooksConfigured(
   fs: FileSystem,
   settingsIds: string[],
@@ -11,7 +11,7 @@ export async function checkHooksConfigured(
     try {
       content = await fs.readFile(id);
     } catch {
-      continue; // 不在/読めない
+      continue; // absent or unreadable
     }
     if (content.includes(marker)) return true;
   }

@@ -14,7 +14,7 @@
     "commands": [
       {
         "command": "noroshi.openSetupGuide",
-        "title": "Noroshi: セットアップ手順を開く"
+        "title": "Noroshi: Open Setup Guide"
       }
     ],
     "configuration": {
@@ -23,48 +23,48 @@
         "noroshi.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Noroshi の効果音通知を有効にする。"
+          "description": "Enable Noroshi sound notifications."
         },
         "noroshi.eventsFile": {
           "type": "string",
           "default": ".claude/noroshi-events.jsonl",
-          "description": "監視するイベントファイル。相対パスはワークスペース基準、絶対パスはリモート(Pod)の絶対パスとして解釈。"
+          "description": "Events file to watch. A relative path is resolved against the workspace; an absolute path is treated as an absolute path on the remote (Pod)."
         },
         "noroshi.sounds.notification": {
           "type": "string",
           "default": "",
-          "description": "応答待ち時に鳴らす音声ファイル。空なら同梱 WAV。"
+          "description": "Sound file played when Claude is waiting for you. Empty uses the bundled WAV."
         },
         "noroshi.sounds.stop": {
           "type": "string",
           "default": "",
-          "description": "処理完了時に鳴らす音声ファイル。空なら同梱 WAV。"
+          "description": "Sound file played when Claude finishes. Empty uses the bundled WAV."
         },
         "noroshi.playerCommand": {
           "type": "string",
           "default": "",
-          "description": "再生コマンドテンプレート。${file} が音声ファイルパスに置換される。空なら OS 既定 (afplay/paplay/PowerShell)。"
+          "description": "Playback command template. ${file} is replaced with the sound file path. Empty uses the OS default (afplay/paplay/PowerShell)."
         },
         "noroshi.pollInterval": {
           "type": "number",
           "default": 3000,
-          "description": "watcher の取りこぼしを拾う安全網ポーリング間隔 (ms)。0 で無効。"
+          "description": "Polling interval (ms) as a safety net for missed watcher events. 0 disables it."
         },
         "noroshi.debounceMs": {
           "type": "number",
           "default": 250,
-          "description": "同種イベントを鳴らしてからこの時間内 (ms) の同種イベントは鳴らさない。0 で無効。"
+          "description": "After playing an event, suppress the same event kind within this window (ms). 0 disables it."
         },
         "noroshi.entrypointFilter": {
           "type": "array",
           "items": { "type": "string" },
           "default": [],
-          "description": "イベントの entrypoint 判別子でフィルタ。空なら全て鳴らす。例: [\"vscode\"] で拡張版セッションのみ。"
+          "description": "Filter playback by the event entrypoint discriminator. Empty plays everything. Example: [\"vscode\"] plays only extension sessions."
         },
         "noroshi.statusBar.show": {
           "type": "boolean",
           "default": true,
-          "description": "ステータスバーに Noroshi の状態を表示する。"
+          "description": "Show the Noroshi status in the status bar."
         }
       }
     }
@@ -75,7 +75,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:integration": "vscode-test",
-    "lint": "oxlint",
+    "lint": "oxlint src scripts",
     "format": "oxfmt src scripts",
     "format:check": "oxfmt --check src scripts",
     "gen-sounds": "node scripts/gen-sounds.js",

@@ -4,7 +4,7 @@ export interface FileStat {
   size: number;
 }
 
-/** id は URI 文字列 (vscode.Uri.toString())。実装はこれを解決してアクセスする。 */
+/** id is a URI string (vscode.Uri.toString()). Implementations resolve it to access the resource. */
 export interface FileSystem {
   stat(id: string): Promise<FileStat | null>;
   readFile(id: string): Promise<string>;
@@ -34,7 +34,7 @@ export class VSCodeFileSystem implements FileSystem {
     try {
       await vscode.workspace.fs.delete(vscode.Uri.parse(id), { useTrash: false });
     } catch {
-      /* 不在は無害 */
+      /* absent is harmless */
     }
   }
 }

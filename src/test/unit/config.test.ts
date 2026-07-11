@@ -2,35 +2,35 @@ import { describe, it, expect } from "vitest";
 import { resolvePlayerCommand, buildPlayCommand, clampNonNegative } from "../../config";
 
 describe("resolvePlayerCommand", () => {
-  it("明示設定があればそれを尊重する", () => {
+  it("respects an explicit setting", () => {
     expect(resolvePlayerCommand('ffplay "${file}"', "linux")).toBe('ffplay "${file}"');
   });
-  it("空なら macOS は afplay", () => {
+  it("defaults to afplay on macOS when empty", () => {
     expect(resolvePlayerCommand("", "darwin")).toBe('afplay "${file}"');
   });
-  it("空なら Linux は paplay", () => {
+  it("defaults to paplay on Linux when empty", () => {
     expect(resolvePlayerCommand("", "linux")).toBe('paplay "${file}"');
   });
-  it("空なら Windows は SoundPlayer", () => {
+  it("defaults to SoundPlayer on Windows when empty", () => {
     expect(resolvePlayerCommand("", "win32")).toContain("Media.SoundPlayer");
   });
-  it("未知 platform は afplay に寄せず paplay を既定にする", () => {
+  it("falls back to paplay for unknown platforms", () => {
     expect(resolvePlayerCommand("", "freebsd" as NodeJS.Platform)).toBe('paplay "${file}"');
   });
 });
 
 describe("buildPlayCommand", () => {
-  it("${file} を全て置換する", () => {
+  it("replaces every ${file}", () => {
     expect(buildPlayCommand('afplay "${file}"', "/a/b.wav")).toBe('afplay "/a/b.wav"');
   });
 });
 
 describe("clampNonNegative", () => {
-  it("負値/NaN は fallback", () => {
+  it("falls back on negative / NaN", () => {
     expect(clampNonNegative(-1, 3000)).toBe(3000);
     expect(clampNonNegative(NaN, 3000)).toBe(3000);
   });
-  it("0 と正値はそのまま", () => {
+  it("passes 0 and positive values through", () => {
     expect(clampNonNegative(0, 3000)).toBe(0);
     expect(clampNonNegative(250, 3000)).toBe(250);
   });

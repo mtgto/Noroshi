@@ -1,0 +1,120 @@
+# Noroshi
+
+Remote Container 上の Claude Code (VSCode 拡張版) の「応答待ち」「処理完了」を、手元 (ローカル) の効果音で通知する VSCode 拡張。
+
+## 仕組み
+
+Claude Code のフックが Pod 上のイベントファイル (`.claude/noroshi-events.jsonl`) に 1 行追記し、
+Noroshi (ローカル実行の UI 拡張) が `vscode.workspace.fs` でそれを監視して手元で音を鳴らす。
+
+拡張は `extensionKind: ["ui"]` として**手元のマシンで動作**するため、`afplay` 等のローカル再生コマンドで
+音を鳴らせる。監視対象ファイルはリモート (Pod) 側にあるが、ワークスペースのファイルシステム経由で読める。
+
+## セットアップ
+
+### 1. フックを設定する (手動)
+
+`.claude/settings.json` に以下を追加する (Noroshi は settings.json を自動編集しない)。
+
+```json
+{
+  "hooks": {
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "printf '{\"event\":\"notification\",\"entrypoint\":\"%s\"}\\n' \"${CLAUDE_CODE_ENTRYPOINT:-unknown}\" >> \"$CLAUDE_PROJECT_DIR/.claude/noroshi-events.jsonl\"  # noroshi"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "printf '{\"event\":\"stop\",\"entrypoint\":\"%s\"}\\n' \"${CLAUDE_CODE_ENTRYPOINT:-unknown}\" >> \"$CLAUDE_PROJECT_DIR/.claude/noroshi-events.jsonl\"  # noroshi"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+`noroshi.eventsFile` を変えた場合は追記先パスも合わせること。
+
+### 2. ステータスバー
+
+`🔊 Noroshi` が出れば設定検出済み。`⚠️ Noroshi` はフック未設定 (クリックで本手順)。
+
+## 設定
+
+| 設定 | 既定 | 説明 |
+|---|---|---|
+| `noroshi.enabled` | `true` | 有効/無効 |
+| `noroshi.eventsFile` | `.claude/noroshi-events.jsonl` | 監視ファイル (相対=ワークスペース基準 / 絶対=Pod 絶対パス) |
+| `noroshi.sounds.notification` / `.stop` | `""` | 音声上書き (空=同梱 WAV) |
+| `noroshi.playerCommand` | `""` | 再生コマンド。`${file}` 置換。空=OS 既定 |
+| `noroshi.pollInterval` | `3000` | 安全網ポーリング (ms)。0 で無効 |
+| `noroshi.debounceMs` | `250` | 同種連打の抑制窓 (ms) |
+| `noroshi.entrypointFilter` | `[]` | 例 `["vscode"]` で拡張版セッションのみ再生 |
+| `noroshi.statusBar.show` | `true` | ステータスバー表示 |
+
+### 音声フォーマット
+
+同梱デフォルトは WAV (全 OS の既定コマンドが再生できる最小公倍数)。
+`sounds.*` に任意フォーマットのパスを指定可 (再生可否は `playerCommand` 依存)。
+macOS は afplay が mp3/m4a も再生する。mp3/m4a を既定にしたい場合は `playerCommand` を
+`ffplay -nodisp -autoexit "${file}"` 等に。
+
+### OS 別の既定再生コマンド
+
+- macOS: `afplay "${file}"`
+- Linux: `paplay "${file}"` (無ければ `aplay`)
+- Windows: `powershell -NoProfile -c "(New-Object Media.SoundPlayer '${file}').PlaySync()"` (WAV のみ)
+
+## セッション種別で鳴らし分ける (entrypoint)
+
+拡張版セッションだけ鳴らしたい場合、まず判別子を実測する。
+一時的に以下のフックを仕込み、拡張版サイドパネルと統合ターミナルの `claude` の両方で応答を完了させ、
+`~/noroshi-env-debug.txt` の 2 ブロックを diff して安定して異なる変数 (候補 `CLAUDE_CODE_ENTRYPOINT`) の値を確認する。
+
+```json
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "{ echo '=== '\"$(date)\"; env | grep -iE 'claude|vscode|term_program|entrypoint'; } >> \"$HOME/noroshi-env-debug.txt\""
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+確認した拡張版の値を `noroshi.entrypointFilter` に設定する (例 `["vscode"]`)。
+
+## 手動スモーク (Remote Container)
+
+1. Remote Container でフォルダを開く。
+2. 上記フックを設定。
+3. Claude Code に何か応答させ、`Stop` で完了音が鳴ることを確認。
+4. `createFileSystemWatcher` が効かない環境でも、`pollInterval` 経過後に鳴ればポーリング従が機能している。
+
+## 開発
+
+```sh
+npm install
+npm test              # 単体テスト (vitest)
+npm run compile       # tsc ビルド (out/)
+npm run lint          # oxlint
+npm run format        # oxfmt
+npm run test:integration  # 統合テスト (実 VSCode を起動。CI では xvfb-run が必要)
+npm run gen-sounds    # 同梱 WAV を再生成
+```

@@ -19,7 +19,7 @@ function make(initial: Record<string, string> = {}) {
 }
 
 describe("DrainCore.drain", () => {
-  it("全行を parse して onEvent に渡し、ファイルを消す", async () => {
+  it("parses every line, fires onEvent, and removes the file", async () => {
     const { fs, events, core } = make({
       [EV]: '{"event":"stop"}\n{"event":"notification","entrypoint":"vscode"}\n',
     });
@@ -29,27 +29,27 @@ describe("DrainCore.drain", () => {
     expect(await fs.stat(EV + DRAINING_SUFFIX)).toBeNull();
   });
 
-  it("イベントファイルが無ければ no-op (ENOENT を握る)", async () => {
+  it("no-ops when the events file is absent (ENOENT swallowed)", async () => {
     const { events, logs, core } = make();
     await core.drain();
     expect(events).toEqual([]);
     expect(logs.join()).not.toMatch(/error/i);
   });
 
-  it("壊れた行は skip し、他行は処理・ログを残す", async () => {
+  it("skips malformed lines but processes the rest and logs", async () => {
     const { events, logs, core } = make({ [EV]: 'not-json\n{"event":"stop"}\n' });
     await core.drain();
     expect(events).toEqual([{ event: "stop" }]);
     expect(logs.some((l) => /skip/i.test(l))).toBe(true);
   });
 
-  it("同時に 2 回 drain しても各行は 1 回だけ (exactly-once)", async () => {
+  it("delivers each line exactly once under concurrent drains", async () => {
     const { events, core } = make({ [EV]: '{"event":"stop"}\n' });
     await Promise.all([core.drain(), core.drain()]);
     expect(events).toEqual([{ event: "stop" }]);
   });
 
-  it("drain 中に来た追記通知は、畳まれた保留再実行で拾う", async () => {
+  it("picks up an append that arrives mid-drain via the coalesced re-run", async () => {
     const { fs, events, core } = make({ [EV]: '{"event":"stop"}\n' });
     const orig = fs.readFile.bind(fs);
     let injected = false;
@@ -57,8 +57,8 @@ describe("DrainCore.drain", () => {
       const out = await orig(id);
       if (!injected) {
         injected = true;
-        fs.append(EV, '{"event":"notification"}\n'); // 新しい events ファイルへの追記
-        void core.drain(); // watcher 再発火を模す → inFlight 中なので pending に畳まれる
+        fs.append(EV, '{"event":"notification"}\n'); // append to the fresh events file
+        void core.drain(); // simulate the watcher re-firing -> coalesced into pending
       }
       return out;
     });
@@ -66,7 +66,7 @@ describe("DrainCore.drain", () => {
     expect(events).toEqual([{ event: "stop" }, { event: "notification" }]);
   });
 
-  it("discard は消すが onEvent を呼ばない", async () => {
+  it("discard removes the file without firing onEvent", async () => {
     const { fs, events, core } = make({ [EV]: '{"event":"stop"}\n' });
     await core.discard();
     expect(events).toEqual([]);

@@ -3,8 +3,9 @@ import type { FileSystem } from "./fileSystem";
 import type { DrainCore } from "./eventSource";
 
 /**
- * プッシュ主 (createFileSystemWatcher) + ポーリング従で監視し、変化時に DrainCore を回す。
- * DrainCore と別ファイルなのは、DrainCore を vscode 非依存に保ち vitest でロードできるようにするため。
+ * Watches the events file (push via createFileSystemWatcher, plus a polling safety net)
+ * and runs DrainCore on change. Kept separate from DrainCore so DrainCore stays
+ * vscode-free and loadable under vitest.
  */
 export class WorkspaceEventSource {
   private watcher?: vscode.FileSystemWatcher;

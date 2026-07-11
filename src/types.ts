@@ -1,7 +1,7 @@
-/** 1 行の JSON イベント。フックが書き、DrainCore が読む。 */
+/** One JSON event line. Written by the hook, read by DrainCore. */
 export interface RawEvent {
-  /** イベント種別。既知は 'notification' | 'stop'。未知値は再生側で無視。 */
+  /** Event kind. Known values: 'notification' | 'stop'. Unknown values are ignored by the player. */
   event: string;
-  /** セッション起動経路の判別子 (§7.1)。無い場合もある。 */
+  /** Session entrypoint discriminator (see spec 7.1). May be absent. */
   entrypoint?: string;
 }

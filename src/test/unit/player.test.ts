@@ -20,44 +20,44 @@ function make(opts: Partial<{ debounceMs: number; entrypointFilter: string[] }> 
 }
 
 describe("Player.handle", () => {
-  it("既知イベントを正しいコマンドで再生", () => {
+  it("plays a known event with the correct command", () => {
     const { runner, player } = make();
     player.handle({ event: "stop" });
     expect(runner.calls).toEqual(['afplay "/s/done.wav"']);
   });
 
-  it("未知イベントは skip + log", () => {
+  it("skips and logs an unknown event", () => {
     const { runner, player, logs } = make();
     player.handle({ event: "weird" });
     expect(runner.calls).toEqual([]);
     expect(logs.some((l) => /weird/.test(l))).toBe(true);
   });
 
-  it("debounce 窓内の同種は鳴らさない", () => {
+  it("suppresses the same event within the debounce window", () => {
     const { runner, clock, player } = make({ debounceMs: 250 });
     player.handle({ event: "stop" });
     clock.advance(100);
-    player.handle({ event: "stop" }); // 窓内 → skip
-    clock.advance(200); // 合計 300ms > 250
-    player.handle({ event: "stop" }); // 鳴る
+    player.handle({ event: "stop" }); // within window -> skip
+    clock.advance(200); // 300ms total > 250
+    player.handle({ event: "stop" }); // plays
     expect(runner.calls.length).toBe(2);
   });
 
-  it("別種イベントは debounce が独立", () => {
+  it("debounces each event kind independently", () => {
     const { runner, player } = make({ debounceMs: 250 });
     player.handle({ event: "stop" });
-    player.handle({ event: "notification" }); // 別種 → 鳴る
+    player.handle({ event: "notification" }); // different kind -> plays
     expect(runner.calls.length).toBe(2);
   });
 
-  it("entrypointFilter 指定時、一致のみ鳴らす", () => {
+  it("plays only matching entrypoints when a filter is set", () => {
     const { runner, player } = make({ entrypointFilter: ["vscode"] });
-    player.handle({ event: "stop", entrypoint: "cli" }); // 不一致 → skip
-    player.handle({ event: "stop", entrypoint: "vscode" }); // 一致 → 鳴る
+    player.handle({ event: "stop", entrypoint: "cli" }); // no match -> skip
+    player.handle({ event: "stop", entrypoint: "vscode" }); // match -> plays
     expect(runner.calls).toEqual(['afplay "/s/done.wav"']);
   });
 
-  it("entrypointFilter 空なら entrypoint 無しでも鳴らす", () => {
+  it("plays even without an entrypoint when the filter is empty", () => {
     const { runner, player } = make({ entrypointFilter: [] });
     player.handle({ event: "stop" });
     expect(runner.calls.length).toBe(1);
