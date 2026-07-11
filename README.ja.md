@@ -2,6 +2,8 @@
 
 Remote Container 上の Claude Code (VSCode 拡張版) の「応答待ち」「処理完了」を、手元 (ローカル) の効果音で通知する VSCode 拡張。
 
+English version: [README.md](README.md)
+
 ## 仕組み
 
 Claude Code のフックが Pod 上のイベントファイル (`.claude/noroshi-events.jsonl`) に 1 行追記し、
@@ -109,10 +111,37 @@ macOS は afplay が mp3/m4a も再生する。mp3/m4a を既定にしたい場�
 3. Claude Code に何か応答させ、`Stop` で完了音が鳴ることを確認。
 4. `createFileSystemWatcher` が効かない環境でも、`pollInterval` 経過後に鳴ればポーリング従が機能している。
 
-## 開発
+## ローカル開発
+
+### F5 でデバッグ実行 (最速・ローカル)
+
+1. このフォルダ (`noroshi`) を VSCode で開く。
+2. 未実行なら `npm install`。
+3. **F5** (実行 → デバッグ開始) → Noroshi を読み込んだ **Extension Development Host** ウィンドウが開く (`preLaunchTask` で自動コンパイル)。
+4. そのウィンドウで適当なフォルダ (できれば `.claude/` があるもの) を開く。
+
+音の最短テスト (Claude 不要。イベントファイルに1行入れば発火):
 
 ```sh
-npm install
+mkdir -p .claude
+echo '{"event":"stop"}' >> .claude/noroshi-events.jsonl        # 完了音
+echo '{"event":"notification"}' >> .claude/noroshi-events.jsonl # 待機音
+```
+
+注: 拡張は**起動時に既存イベントを破棄**するので、**起動後に**追記すること。イベントファイルは読み取り直後に drain (削除) されるため、平常時は存在しないのが正常。ログは「出力」パネルの **Noroshi** チャンネル。
+
+### VSCode にインストール (VSIX)
+
+```sh
+npx @vscode/vsce package        # noroshi-0.0.1.vsix を生成 (警告は無視でOK)
+code --install-extension noroshi-0.0.1.vsix
+```
+
+または拡張パネル → `…` → **Install from VSIX**。Noroshi は `["ui"]` 拡張なのでローカル (UI) 側に入る (Remote Container 用途で狙いどおり)。
+
+### スクリプト
+
+```sh
 npm test              # 単体テスト (vitest)
 npm run compile       # tsc ビルド (out/)
 npm run lint          # oxlint
