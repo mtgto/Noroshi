@@ -67,13 +67,15 @@ Noroshi (ローカル実行の UI 拡張) が `vscode.workspace.fs` でそれを
 同梱デフォルトは WAV (全 OS の既定コマンドが再生できる最小公倍数)。
 `sounds.*` に任意フォーマットのパスを指定可 (再生可否は `playerCommand` 依存)。
 macOS は afplay が mp3/m4a も再生する。mp3/m4a を既定にしたい場合は `playerCommand` を
-`ffplay -nodisp -autoexit "${file}"` 等に。
+`ffplay -nodisp -autoexit ${file}` 等に。
 
 ### OS 別の既定再生コマンド
 
-- macOS: `afplay "${file}"`
-- Linux: `paplay "${file}"` (無ければ `aplay`)
-- Windows: `powershell -NoProfile -c "(New-Object Media.SoundPlayer '${file}').PlaySync()"` (WAV のみ)
+`${file}` はシェルクォートされたパスに置換されるため、テンプレート内で `${file}` を引用符で囲まないこと。
+
+- macOS: `afplay ${file}`
+- Linux: `paplay ${file}` (無ければ `aplay`)
+- Windows: `powershell -NoProfile -c "(New-Object Media.SoundPlayer ${file}).PlaySync()"` (WAV のみ)
 
 ## セッション種別で鳴らし分ける (entrypoint)
 

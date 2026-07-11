@@ -116,6 +116,7 @@ async function start(context: vscode.ExtensionContext): Promise<void> {
     runner: new ExecCommandRunner(),
     clock: new RealClock(),
     playerCommand: s.playerCommand,
+    platform: process.platform,
     soundFor,
     debounceMs: s.debounceMs,
     entrypointFilter: s.entrypointFilter,

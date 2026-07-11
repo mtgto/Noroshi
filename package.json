@@ -43,7 +43,7 @@
         "noroshi.playerCommand": {
           "type": "string",
           "default": "",
-          "description": "Playback command template. ${file} is replaced with the sound file path. Empty uses the OS default (afplay/paplay/PowerShell)."
+          "description": "Playback command template. ${file} is replaced with a shell-quoted sound file path (do not wrap it in quotes yourself). Empty uses the OS default (afplay/paplay/PowerShell)."
         },
         "noroshi.pollInterval": {
           "type": "number",
