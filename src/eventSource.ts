@@ -78,8 +78,10 @@ export class DrainCore {
     await this.consumeDraining(drainingId, emit);
   }
 
-  // Reads, emits, and deletes the draining file. On a read error the file is left
-  // in place (orphan) so the next cycle can retry it, preventing event loss.
+  // Reads, deletes, then emits the draining file. On a read or delete error the
+  // file is left in place (orphan) so the next cycle can retry it, preventing
+  // event loss. Emitting only after a successful delete avoids double-playing
+  // events on a delete-then-retry.
   private async consumeDraining(drainingId: string, emit: boolean): Promise<void> {
     let content: string;
     try {
@@ -95,7 +97,15 @@ export class DrainCore {
       this.orphan = true;
       return;
     }
-    await this.fs.delete(drainingId);
+    try {
+      await this.fs.delete(drainingId);
+    } catch (err) {
+      if (!this.orphan) {
+        this.log(`drain delete error (will retry next cycle): ${describe(err)}`);
+      }
+      this.orphan = true;
+      return;
+    }
     this.orphan = false;
     if (emit) this.emitLines(content);
   }

@@ -40,7 +40,11 @@ export function activate(context: vscode.ExtensionContext): void {
 
   context.subscriptions.push(vscode.commands.registerCommand(SHOW_MENU, () => void showMenu()));
 
-  const rebuild = () => void start(context);
+  const rebuild = () => {
+    start(context).catch((err) => {
+      output.appendLine(`start failed: ${err instanceof Error ? err.message : String(err)}`);
+    });
+  };
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration("noroshi")) rebuild();
@@ -48,7 +52,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.workspace.onDidChangeWorkspaceFolders(rebuild),
   );
 
-  void start(context);
+  rebuild();
 }
 
 export function deactivate(): void {

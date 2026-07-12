@@ -92,6 +92,25 @@ describe("DrainCore.drain", () => {
     expect(fs.has(EV + DRAINING_SUFFIX)).toBe(false);
   });
 
+  it("preserves and later delivers events when a delete transiently fails (no double-emit)", async () => {
+    const { fs, events, core } = make({ [EV]: '{"event":"stop"}\n' });
+    const orig = fs.delete.bind(fs);
+    let failOnce = true;
+    vi.spyOn(fs, "delete").mockImplementation(async (id: string) => {
+      if (failOnce && id === EV + DRAINING_SUFFIX) {
+        failOnce = false;
+        throw new Error("transient delete error");
+      }
+      return orig(id);
+    });
+    await core.drain(); // rename ok, read ok, delete fails -> orphan preserved, nothing emitted
+    expect(events).toEqual([]);
+    expect(fs.has(EV + DRAINING_SUFFIX)).toBe(true);
+    await core.drain(); // recovers the orphan: re-reads, deletes, emits exactly once
+    expect(events).toEqual([{ event: "stop" }]);
+    expect(fs.has(EV + DRAINING_SUFFIX)).toBe(false);
+  });
+
   it("logs a persistent rename error only once across cycles", async () => {
     const { fs, logs, core } = make({ [EV]: '{"event":"stop"}\n' });
     vi.spyOn(fs, "rename").mockRejectedValue(new Error("EPERM: locked"));
