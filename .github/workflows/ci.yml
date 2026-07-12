@@ -6,10 +6,15 @@ on:
   pull_request:
     branches: [main]
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   check:
     name: format / lint / test
     runs-on: ubuntu-slim
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v6
@@ -24,7 +29,10 @@ jobs:
 
   integration:
     name: integration test
-    runs-on: ubuntu-slim
+    # Full image: it ships the GUI libraries (libatk, libgtk, ...) that VS Code's
+    # Electron needs. ubuntu-slim lacks them, so the editor fails to launch.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v6
