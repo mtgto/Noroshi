@@ -4,6 +4,7 @@ node_modules/
 out/
 .superpowers/
 .vscode-test/
+.vscode/settings.json
 
 # build artifacts
 *.vsix
