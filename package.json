@@ -9,7 +9,7 @@
   "bugs": { "url": "https://github.com/mtgto/noroshi/issues" },
   "homepage": "https://github.com/mtgto/noroshi#readme",
   "keywords": ["claude", "claude-code", "notification", "sound", "hooks", "remote container"],
-  "engines": { "vscode": "^1.84.0" },
+  "engines": { "vscode": "^1.98.0" },
   "extensionKind": ["ui"],
   "icon": "media/icon.png",
   "categories": ["Other"],
@@ -90,7 +90,7 @@
   "devDependencies": {
     "@types/mocha": "^10.0.0",
     "@types/node": "^24.0.0",
-    "@types/vscode": "^1.84.0",
+    "@types/vscode": "1.98.0",
     "@vscode/test-cli": "^0.0.10",
     "@vscode/test-electron": "^2.4.1",
     "oxfmt": "^0.58.0",
