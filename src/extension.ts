@@ -18,7 +18,7 @@ import type { RawEvent } from "./types";
 
 const MARKER = "# noroshi";
 const SHOW_MENU = "noroshi.showMenu";
-const README_URL = "https://github.com/mtgto/noroshi#setup";
+const EXTENSION_ID = "mtgto.noroshi";
 
 let disposer: vscode.Disposable[] = [];
 let output: vscode.OutputChannel;
@@ -194,7 +194,9 @@ async function runMenuAction(id: MenuActionId): Promise<void> {
       void vscode.window.showInformationMessage("Noroshi: hook snippet copied to clipboard.");
       return;
     case "openSetupGuide":
-      void vscode.env.openExternal(vscode.Uri.parse(README_URL));
+      // Opens the extension's Details tab in the editor (renders README.md inline)
+      // instead of a browser tab.
+      void vscode.commands.executeCommand("extension.open", EXTENSION_ID);
       return;
     case "toggleEnabled": {
       const config = vscode.workspace.getConfiguration("noroshi");

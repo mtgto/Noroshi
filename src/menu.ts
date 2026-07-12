@@ -24,7 +24,7 @@ export function buildMenuItems(enabled: boolean): MenuItem[] {
     {
       id: "openSetupGuide",
       label: "$(book) Open Setup Guide",
-      description: "Open the README setup instructions",
+      description: "Show this extension's README (setup instructions)",
     },
     {
       id: "toggleEnabled",
