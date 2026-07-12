@@ -5,15 +5,35 @@
   "version": "0.0.1",
   "publisher": "mtgto",
   "license": "MIT",
-  "repository": { "type": "git", "url": "https://github.com/mtgto/noroshi.git" },
-  "bugs": { "url": "https://github.com/mtgto/noroshi/issues" },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mtgto/noroshi.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mtgto/noroshi/issues"
+  },
   "homepage": "https://github.com/mtgto/noroshi#readme",
-  "keywords": ["claude", "claude-code", "notification", "sound", "hooks", "remote container"],
-  "engines": { "vscode": "^1.98.0" },
-  "extensionKind": ["ui"],
+  "keywords": [
+    "claude",
+    "claude-code",
+    "notification",
+    "sound",
+    "hooks",
+    "remote container"
+  ],
+  "engines": {
+    "vscode": "^1.98.0"
+  },
+  "extensionKind": [
+    "ui"
+  ],
   "icon": "media/icon.png",
-  "categories": ["Other"],
-  "activationEvents": ["onStartupFinished"],
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
@@ -62,7 +82,9 @@
         },
         "noroshi.entrypointFilter": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "default": [],
           "description": "%config.entrypointFilter.description%"
         },
@@ -80,19 +102,21 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:integration": "vscode-test",
+    "typecheck": "tsc --noEmit",
     "lint": "oxlint src scripts",
     "format": "oxfmt src scripts",
     "format:check": "oxfmt --check src scripts",
     "gen-sounds": "node scripts/gen-sounds.js",
-    "vscode:prepublish": "npm run compile"
+    "vscode:prepublish": "npm run compile",
+    "prepare": "lefthook install"
   },
-  "dependencies": {},
   "devDependencies": {
     "@types/mocha": "^10.0.0",
     "@types/node": "^24.0.0",
     "@types/vscode": "1.98.0",
     "@vscode/test-cli": "^0.0.10",
     "@vscode/test-electron": "^2.4.1",
+    "lefthook": "^2.1.10",
     "oxfmt": "^0.58.0",
     "oxlint": "^1.73.0",
     "typescript": "^7.0.2",
