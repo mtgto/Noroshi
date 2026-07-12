@@ -2,6 +2,11 @@ import type { FileSystem, FileStat } from "../fileSystem";
 import type { CommandRunner } from "../commandRunner";
 import type { Clock } from "../clock";
 
+// In-memory/no-op stand-ins for the DI seams (FileSystem, CommandRunner, Clock)
+// so unit tests can drive DrainCore/Player/setupChecker without vscode or the OS.
+// Each Fake* class substitutes for the production class named in its "implements".
+
+/** Stands in for VSCodeFileSystem: an in-memory id -> content map instead of vscode.workspace.fs. */
 export class FakeFileSystem implements FileSystem {
   private files = new Map<string, string>();
 
@@ -37,6 +42,7 @@ export class FakeFileSystem implements FileSystem {
   }
 }
 
+/** Stands in for ExecCommandRunner: records commands instead of spawning a shell. */
 export class FakeCommandRunner implements CommandRunner {
   calls: string[] = [];
   async run(commandLine: string): Promise<void> {
@@ -44,6 +50,7 @@ export class FakeCommandRunner implements CommandRunner {
   }
 }
 
+/** Stands in for RealClock: a manually advanced clock instead of Date.now(). */
 export class FakeClock implements Clock {
   constructor(private t = 0) {}
   now(): number {
