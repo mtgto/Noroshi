@@ -16,7 +16,6 @@ import { NoroshiStatusBar } from "./statusBar";
 import { buildMenuItems, buildHookSnippet, type MenuActionId } from "./menu";
 import type { RawEvent } from "./types";
 
-const MARKER = "# noroshi";
 const SHOW_MENU = "noroshi.showMenu";
 const EXTENSION_ID = "mtgto.noroshi";
 
@@ -107,7 +106,7 @@ async function start(context: vscode.ExtensionContext): Promise<void> {
     vscode.Uri.joinPath(folder.uri, ".claude", "settings.json").toString(),
     vscode.Uri.joinPath(folder.uri, ".claude", "settings.local.json").toString(),
   ];
-  const configured = await checkHooksConfigured(fs, settingsIds, MARKER);
+  const configured = await checkHooksConfigured(fs, settingsIds, s.eventsFile);
   if (gen !== generation) return; // superseded by a newer start() during the await
   menuState.configured = configured;
   status.update(
