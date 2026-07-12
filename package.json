@@ -19,7 +19,7 @@
     "commands": [
       {
         "command": "noroshi.openSetupGuide",
-        "title": "Noroshi: Open Setup Guide"
+        "title": "%command.openSetupGuide.title%"
       }
     ],
     "configuration": {
@@ -28,48 +28,48 @@
         "noroshi.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Enable Noroshi sound notifications."
+          "description": "%config.enabled.description%"
         },
         "noroshi.eventsFile": {
           "type": "string",
           "default": ".claude/noroshi-events.jsonl",
-          "description": "Events file to watch. A relative path is resolved against the workspace; an absolute path is treated as an absolute path on the remote (Pod)."
+          "description": "%config.eventsFile.description%"
         },
         "noroshi.sounds.notification": {
           "type": "string",
           "default": "",
-          "description": "Sound file played when Claude is waiting for you. Empty uses the bundled WAV."
+          "description": "%config.sounds.notification.description%"
         },
         "noroshi.sounds.stop": {
           "type": "string",
           "default": "",
-          "description": "Sound file played when Claude finishes. Empty uses the bundled WAV."
+          "description": "%config.sounds.stop.description%"
         },
         "noroshi.playerCommand": {
           "type": "string",
           "default": "",
-          "description": "Playback command template. ${file} is replaced with a shell-quoted sound file path (do not wrap it in quotes yourself). Empty uses the OS default (afplay/paplay/PowerShell)."
+          "description": "%config.playerCommand.description%"
         },
         "noroshi.pollInterval": {
           "type": "number",
           "default": 3000,
-          "description": "Polling interval (ms) as a safety net for missed watcher events. 0 disables it."
+          "description": "%config.pollInterval.description%"
         },
         "noroshi.debounceMs": {
           "type": "number",
           "default": 250,
-          "description": "After playing an event, suppress the same event kind within this window (ms). 0 disables it."
+          "description": "%config.debounceMs.description%"
         },
         "noroshi.entrypointFilter": {
           "type": "array",
           "items": { "type": "string" },
           "default": [],
-          "description": "Filter playback by the event entrypoint discriminator. Empty plays everything. Example: [\"claude-vscode\"] plays only VSCode extension sessions."
+          "description": "%config.entrypointFilter.description%"
         },
         "noroshi.statusBar.show": {
           "type": "boolean",
           "default": true,
-          "description": "Show the Noroshi status in the status bar."
+          "description": "%config.statusBar.show.description%"
         }
       }
     }

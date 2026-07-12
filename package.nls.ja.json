@@ -1,0 +1,12 @@
+{
+  "command.openSetupGuide.title": "Noroshi: セットアップ手順を開く",
+  "config.enabled.description": "Noroshi の効果音通知を有効にする。",
+  "config.eventsFile.description": "監視するイベントファイル。相対パスはワークスペース基準、絶対パスはリモート (Pod) の絶対パスとして解釈する。",
+  "config.sounds.notification.description": "応答待ち時に鳴らす音声ファイル。空なら同梱 WAV を使う。",
+  "config.sounds.stop.description": "処理完了時に鳴らす音声ファイル。空なら同梱 WAV を使う。",
+  "config.playerCommand.description": "再生コマンドのテンプレート。${file} はシェルクォート済みの音声ファイルパスに置換される (自分で引用符を付けないこと)。空なら OS 既定 (afplay/paplay/PowerShell) を使う。",
+  "config.pollInterval.description": "watcher の取りこぼしを拾う安全網のポーリング間隔 (ミリ秒)。0 で無効。",
+  "config.debounceMs.description": "イベントを鳴らした後、この時間 (ミリ秒) 以内の同種イベントは鳴らさない。0 で無効。",
+  "config.entrypointFilter.description": "イベントの entrypoint 判別子で再生をフィルタする。空ならすべて鳴らす。例: [\"claude-vscode\"] で VSCode 拡張版セッションのみ再生。",
+  "config.statusBar.show.description": "ステータスバーに Noroshi の状態を表示する。"
+}

@@ -1,0 +1,12 @@
+{
+  "command.openSetupGuide.title": "Noroshi: Open Setup Guide",
+  "config.enabled.description": "Enable Noroshi sound notifications.",
+  "config.eventsFile.description": "Events file to watch. A relative path is resolved against the workspace; an absolute path is treated as an absolute path on the remote (Pod).",
+  "config.sounds.notification.description": "Sound file played when Claude is waiting for you. Empty uses the bundled WAV.",
+  "config.sounds.stop.description": "Sound file played when Claude finishes. Empty uses the bundled WAV.",
+  "config.playerCommand.description": "Playback command template. ${file} is replaced with a shell-quoted sound file path (do not wrap it in quotes yourself). Empty uses the OS default (afplay/paplay/PowerShell).",
+  "config.pollInterval.description": "Polling interval (ms) as a safety net for missed watcher events. 0 disables it.",
+  "config.debounceMs.description": "After playing an event, suppress the same event kind within this window (ms). 0 disables it.",
+  "config.entrypointFilter.description": "Filter playback by the event entrypoint discriminator. Empty plays everything. Example: [\"claude-vscode\"] plays only VSCode extension sessions.",
+  "config.statusBar.show.description": "Show the Noroshi status in the status bar."
+}
