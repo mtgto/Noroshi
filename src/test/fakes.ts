@@ -42,11 +42,11 @@ export class FakeFileSystem implements FileSystem {
   }
 }
 
-/** Stands in for ExecCommandRunner: records commands instead of spawning a shell. */
+/** Stands in for SpawnCommandRunner: records commands instead of spawning a process. */
 export class FakeCommandRunner implements CommandRunner {
-  calls: string[] = [];
-  async run(commandLine: string): Promise<void> {
-    this.calls.push(commandLine);
+  calls: string[][] = [];
+  async run(command: string, args: string[]): Promise<void> {
+    this.calls.push([command, ...args]);
   }
 }
 

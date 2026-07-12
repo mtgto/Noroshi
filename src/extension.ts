@@ -9,7 +9,7 @@ import { VSCodeFileSystem } from "./fileSystem";
 import { DrainCore } from "./eventSource";
 import { WorkspaceEventSource } from "./workspaceEventSource";
 import { Player, type SoundResolver } from "./player";
-import { ExecCommandRunner } from "./commandRunner";
+import { SpawnCommandRunner } from "./commandRunner";
 import { RealClock } from "./clock";
 import { checkHooksConfigured } from "./setupChecker";
 import { NoroshiStatusBar } from "./statusBar";
@@ -124,10 +124,9 @@ async function start(context: vscode.ExtensionContext): Promise<void> {
   };
 
   const player = new Player({
-    runner: new ExecCommandRunner(),
+    runner: new SpawnCommandRunner(),
     clock: new RealClock(),
     playerCommand: s.playerCommand,
-    platform: process.platform,
     soundFor,
     debounceMs: s.debounceMs,
     entrypointFilter: s.entrypointFilter,

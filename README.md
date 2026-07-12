@@ -84,8 +84,11 @@ default, set `playerCommand` to something like `ffplay -nodisp -autoexit ${file}
 
 ### Default playback commands
 
-`${file}` is replaced with a shell-quoted path, so do **not** wrap `${file}` in
-quotes yourself in the template.
+`playerCommand` is split into argv tokens and run directly — **no shell** is
+involved, so `${file}` is substituted as a single literal argument regardless of
+spaces or special characters in the path. Quoting `${file}` yourself is unnecessary
+(quotes in the template only group a token containing spaces, e.g. for the `-c`
+argument below).
 
 - macOS: `afplay ${file}`
 - Linux: `paplay ${file}` (falls back to `aplay`)

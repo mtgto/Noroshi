@@ -1,45 +1,56 @@
 import { describe, it, expect } from "vitest";
 import {
   resolvePlayerCommand,
+  splitCommandLine,
   buildPlayCommand,
-  shellQuote,
   clampNonNegative,
   isAbsolutePath,
 } from "../../config";
 
 describe("resolvePlayerCommand", () => {
-  it("respects an explicit setting", () => {
-    expect(resolvePlayerCommand("ffplay ${file}", "linux")).toBe("ffplay ${file}");
+  it("respects an explicit setting, split into argv", () => {
+    expect(resolvePlayerCommand("ffplay ${file}", "linux")).toEqual(["ffplay", "${file}"]);
   });
   it("defaults to afplay on macOS when empty", () => {
-    expect(resolvePlayerCommand("", "darwin")).toBe("afplay ${file}");
+    expect(resolvePlayerCommand("", "darwin")).toEqual(["afplay", "${file}"]);
   });
   it("defaults to paplay on Linux when empty", () => {
-    expect(resolvePlayerCommand("", "linux")).toBe("paplay ${file}");
+    expect(resolvePlayerCommand("", "linux")).toEqual(["paplay", "${file}"]);
   });
   it("defaults to SoundPlayer on Windows when empty", () => {
-    expect(resolvePlayerCommand("", "win32")).toContain("Media.SoundPlayer");
+    expect(resolvePlayerCommand("", "win32").join(" ")).toContain("Media.SoundPlayer");
   });
   it("falls back to paplay for unknown platforms", () => {
-    expect(resolvePlayerCommand("", "freebsd" as NodeJS.Platform)).toBe("paplay ${file}");
+    expect(resolvePlayerCommand("", "freebsd" as NodeJS.Platform)).toEqual(["paplay", "${file}"]);
+  });
+});
+
+describe("splitCommandLine", () => {
+  it("splits on whitespace", () => {
+    expect(splitCommandLine("ffplay -nodisp -autoexit ${file}")).toEqual([
+      "ffplay",
+      "-nodisp",
+      "-autoexit",
+      "${file}",
+    ]);
+  });
+  it("groups a quoted span containing spaces into one token", () => {
+    expect(splitCommandLine('node -e "console.log(1)"')).toEqual(["node", "-e", "console.log(1)"]);
+  });
+  it("treats an embedded quote of a different kind as literal", () => {
+    expect(splitCommandLine(`node -e "require('fs')"`)).toEqual(["node", "-e", "require('fs')"]);
   });
 });
 
 describe("buildPlayCommand", () => {
-  it("replaces every ${file} with the given value", () => {
-    expect(buildPlayCommand("afplay ${file}", "'/a/b.wav'")).toBe("afplay '/a/b.wav'");
+  it("replaces every ${file} token with the literal path (no shell quoting)", () => {
+    expect(buildPlayCommand(["afplay", "${file}"], "/a/b.wav")).toEqual(["afplay", "/a/b.wav"]);
   });
-});
-
-describe("shellQuote", () => {
-  it("single-quotes a POSIX path so spaces and metacharacters are literal", () => {
-    expect(shellQuote("/a b/c$d.wav", "darwin")).toBe("'/a b/c$d.wav'");
-  });
-  it("escapes embedded single quotes on POSIX", () => {
-    expect(shellQuote("/a'b.wav", "linux")).toBe(`'/a'\\''b.wav'`);
-  });
-  it("uses PowerShell single-quote doubling on Windows", () => {
-    expect(shellQuote("C:\\a b\\it's.wav", "win32")).toBe("'C:\\a b\\it''s.wav'");
+  it("substitutes ${file} even when embedded inside a larger token", () => {
+    expect(buildPlayCommand(["echo", "path=${file}"], "/a/b.wav")).toEqual([
+      "echo",
+      "path=/a/b.wav",
+    ]);
   });
 });
 

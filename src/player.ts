@@ -1,4 +1,4 @@
-import { buildPlayCommand, shellQuote } from "./config";
+import { buildPlayCommand } from "./config";
 import type { CommandRunner } from "./commandRunner";
 import type { Clock } from "./clock";
 import type { RawEvent } from "./types";
@@ -8,8 +8,7 @@ export type SoundResolver = (eventKind: string) => string | null;
 export interface PlayerOptions {
   runner: CommandRunner;
   clock: Clock;
-  playerCommand: string;
-  platform: NodeJS.Platform;
+  playerCommand: string[];
   soundFor: SoundResolver;
   debounceMs: number;
   entrypointFilter: string[];
@@ -42,8 +41,8 @@ export class Player {
     if (last !== undefined && now - last < debounceMs) return;
     this.lastPlayed.set(e.event, now);
 
-    const cmd = buildPlayCommand(this.opts.playerCommand, shellQuote(file, this.opts.platform));
-    this.opts.runner.run(cmd).catch((err) => this.logError(err));
+    const [command, ...args] = buildPlayCommand(this.opts.playerCommand, file);
+    this.opts.runner.run(command, args).catch((err) => this.logError(err));
   }
 
   private logError(err: unknown): void {

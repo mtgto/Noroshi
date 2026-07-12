@@ -10,8 +10,7 @@ function make(opts: Partial<{ debounceMs: number; entrypointFilter: string[] }> 
   const player = new Player({
     runner,
     clock,
-    playerCommand: "afplay ${file}",
-    platform: "darwin",
+    playerCommand: ["afplay", "${file}"],
     soundFor: (k) => sounds[k] ?? null,
     debounceMs: opts.debounceMs ?? 250,
     entrypointFilter: opts.entrypointFilter ?? [],
@@ -21,10 +20,10 @@ function make(opts: Partial<{ debounceMs: number; entrypointFilter: string[] }> 
 }
 
 describe("Player.handle", () => {
-  it("plays a known event with a shell-quoted command", () => {
+  it("plays a known event by substituting ${file} into the command's argv", () => {
     const { runner, player } = make();
     player.handle({ event: "stop" });
-    expect(runner.calls).toEqual(["afplay '/s/done.wav'"]);
+    expect(runner.calls).toEqual([["afplay", "/s/done.wav"]]);
   });
 
   it("skips and logs an unknown event", () => {
@@ -55,7 +54,7 @@ describe("Player.handle", () => {
     const { runner, player } = make({ entrypointFilter: ["vscode"] });
     player.handle({ event: "stop", entrypoint: "cli" }); // no match -> skip
     player.handle({ event: "stop", entrypoint: "vscode" }); // match -> plays
-    expect(runner.calls).toEqual(["afplay '/s/done.wav'"]);
+    expect(runner.calls).toEqual([["afplay", "/s/done.wav"]]);
   });
 
   it("plays even without an entrypoint when the filter is empty", () => {

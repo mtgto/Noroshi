@@ -1,14 +1,22 @@
-import { exec } from "node:child_process";
+import { spawn } from "node:child_process";
 
 export interface CommandRunner {
-  run(commandLine: string): Promise<void>;
+  run(command: string, args: string[]): Promise<void>;
 }
 
-/** Run the playback command through a shell. Fire-and-forget, but rejects on failure. */
-export class ExecCommandRunner implements CommandRunner {
-  run(commandLine: string): Promise<void> {
+/**
+ * Run the playback command directly (no shell in between), so a file path or
+ * custom playerCommand containing shell metacharacters can't be interpreted.
+ */
+export class SpawnCommandRunner implements CommandRunner {
+  run(command: string, args: string[]): Promise<void> {
     return new Promise((resolve, reject) => {
-      exec(commandLine, (err) => (err ? reject(err) : resolve()));
+      const child = spawn(command, args, { shell: false });
+      child.once("error", reject);
+      child.once("exit", (code) => {
+        if (code === 0) resolve();
+        else reject(new Error(`${command} exited with code ${code}`));
+      });
     });
   }
 }
