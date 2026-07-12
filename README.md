@@ -57,7 +57,10 @@ If you change `noroshi.eventsFile`, update the append target to match.
 ### 2. Status bar
 
 `🔊 Noroshi` means the hook was detected. `⚠️ Noroshi` means the hook is not
-configured (click it to open this guide).
+configured. Click it (or run **Noroshi: Show Menu** from the Command Palette) to
+open a menu with: copy the hook snippet to the clipboard (pre-filled with your
+`noroshi.eventsFile`), open this setup guide, enable/disable Noroshi, show the
+output log, and open Noroshi's settings.
 
 ## Settings
 

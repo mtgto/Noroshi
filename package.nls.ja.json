@@ -1,5 +1,5 @@
 {
-  "command.openSetupGuide.title": "Noroshi: セットアップ手順を開く",
+  "command.showMenu.title": "Noroshi: メニューを表示",
   "config.enabled.description": "Noroshi の効果音通知を有効にする。",
   "config.eventsFile.description": "監視するイベントファイル。相対パスはワークスペース基準、絶対パスはリモート (Pod) の絶対パスとして解釈する。",
   "config.sounds.notification.description": "応答待ち時に鳴らす音声ファイル。空なら同梱 WAV を使う。",

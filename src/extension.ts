@@ -13,10 +13,11 @@ import { ExecCommandRunner } from "./commandRunner";
 import { RealClock } from "./clock";
 import { checkHooksConfigured } from "./setupChecker";
 import { NoroshiStatusBar } from "./statusBar";
+import { buildMenuItems, buildHookSnippet, type MenuActionId } from "./menu";
 import type { RawEvent } from "./types";
 
 const MARKER = "# noroshi";
-const OPEN_GUIDE = "noroshi.openSetupGuide";
+const SHOW_MENU = "noroshi.showMenu";
 const README_URL = "https://github.com/mtgto/noroshi#setup";
 
 let disposer: vscode.Disposable[] = [];
@@ -25,15 +26,20 @@ let output: vscode.OutputChannel;
 // after each await so overlapping config-change rebuilds don't race the disposer.
 let generation = 0;
 
+// Snapshot of the state the status-bar menu needs, kept current by start() so the
+// menu command (invoked independently of start()'s lifecycle) always has an answer.
+interface MenuState {
+  enabled: boolean;
+  configured: boolean;
+  eventsFile: string;
+}
+let menuState: MenuState = { enabled: true, configured: false, eventsFile: "" };
+
 export function activate(context: vscode.ExtensionContext): void {
   output = vscode.window.createOutputChannel("Noroshi");
   context.subscriptions.push(output);
 
-  context.subscriptions.push(
-    vscode.commands.registerCommand(OPEN_GUIDE, () => {
-      void vscode.env.openExternal(vscode.Uri.parse(README_URL));
-    }),
-  );
+  context.subscriptions.push(vscode.commands.registerCommand(SHOW_MENU, () => void showMenu()));
 
   const rebuild = () => void start(context);
   context.subscriptions.push(
@@ -75,14 +81,15 @@ async function start(context: vscode.ExtensionContext): Promise<void> {
   const gen = ++generation;
   disposeAll();
   const s = readSettings();
+  menuState = { enabled: s.enabled, configured: false, eventsFile: s.eventsFile };
 
   const statusItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 0);
-  const status = new NoroshiStatusBar(statusItem, OPEN_GUIDE);
+  const status = new NoroshiStatusBar(statusItem, SHOW_MENU);
   disposer.push(status);
   status.setVisible(s.statusBarShow);
 
   if (!s.enabled) {
-    status.update("disabled", "Noroshi is disabled (noroshi.enabled)");
+    status.update("disabled", "Noroshi is disabled (noroshi.enabled). Click for options.");
     return;
   }
 
@@ -102,11 +109,10 @@ async function start(context: vscode.ExtensionContext): Promise<void> {
   ];
   const configured = await checkHooksConfigured(fs, settingsIds, MARKER);
   if (gen !== generation) return; // superseded by a newer start() during the await
+  menuState.configured = configured;
   status.update(
     configured ? "active" : "unconfigured",
-    configured
-      ? `Watching: ${s.eventsFile}`
-      : "Hook not configured. Click to open the setup guide (README).",
+    configured ? `Watching: ${s.eventsFile}` : "Hook not configured. Click for setup options.",
   );
 
   const bundled = (name: string) =>
@@ -166,4 +172,51 @@ function resolveWatchPattern(
 function toUriPath(p: string): string {
   const norm = p.replace(/\\/g, "/");
   return norm.startsWith("/") ? norm : "/" + norm;
+}
+
+async function showMenu(): Promise<void> {
+  const items = buildMenuItems(menuState.enabled).map((m) => ({
+    label: m.label,
+    description: m.description,
+    id: m.id,
+  }));
+  const placeHolder = menuState.configured
+    ? `Noroshi — hook configured, watching ${menuState.eventsFile}`
+    : "Noroshi — hook not configured yet";
+  const picked = await vscode.window.showQuickPick(items, { placeHolder });
+  if (picked) await runMenuAction(picked.id);
+}
+
+async function runMenuAction(id: MenuActionId): Promise<void> {
+  switch (id) {
+    case "copyHookSnippet":
+      await vscode.env.clipboard.writeText(buildHookSnippet(menuState.eventsFile));
+      void vscode.window.showInformationMessage("Noroshi: hook snippet copied to clipboard.");
+      return;
+    case "openSetupGuide":
+      void vscode.env.openExternal(vscode.Uri.parse(README_URL));
+      return;
+    case "toggleEnabled": {
+      const config = vscode.workspace.getConfiguration("noroshi");
+      await config.update("enabled", !menuState.enabled, resolveEnabledTarget(config));
+      return;
+    }
+    case "showLog":
+      output.show(true);
+      return;
+    case "openSettings":
+      void vscode.commands.executeCommand("workbench.action.openSettings", "@ext:mtgto.noroshi");
+      return;
+  }
+}
+
+/** Update at whichever scope currently overrides noroshi.enabled, defaulting to
+ *  the workspace when a folder is open (matches where users typically toggle it). */
+function resolveEnabledTarget(config: vscode.WorkspaceConfiguration): vscode.ConfigurationTarget {
+  const info = config.inspect<boolean>("enabled");
+  if (info?.workspaceValue !== undefined) return vscode.ConfigurationTarget.Workspace;
+  if (info?.globalValue !== undefined) return vscode.ConfigurationTarget.Global;
+  return vscode.workspace.workspaceFolders?.length
+    ? vscode.ConfigurationTarget.Workspace
+    : vscode.ConfigurationTarget.Global;
 }

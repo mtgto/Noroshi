@@ -18,8 +18,8 @@
   "contributes": {
     "commands": [
       {
-        "command": "noroshi.openSetupGuide",
-        "title": "%command.openSetupGuide.title%"
+        "command": "noroshi.showMenu",
+        "title": "%command.showMenu.title%"
       }
     ],
     "configuration": {
