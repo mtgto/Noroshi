@@ -68,6 +68,11 @@ Noroshi (ローカル実行の UI 拡張) が `vscode.workspace.fs` でそれを
 | `noroshi.entrypointFilter` | `[]` | 例 `["claude-vscode"]` で拡張版セッションのみ再生 |
 | `noroshi.statusBar.show` | `true` | ステータスバー表示 |
 
+`eventsFile` / `playerCommand` / `sounds.*` はローカルコマンドの実行やローカルファイルの操作に繋がるため、
+[VSCode Workspace Trust](https://code.visualstudio.com/docs/editor/workspace-trust) の対象になっている。
+信頼されていないワークスペースでは、これらのワークスペース/フォルダ単位の上書き設定は無視され、ユーザー設定
+またはデフォルト値にフォールバックする (Noroshi 自体はそのデフォルト値で通常通り動作を続ける)。
+
 ### 音声フォーマット
 
 同梱デフォルトは WAV (全 OS の既定コマンドが再生できる最小公倍数)。

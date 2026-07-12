@@ -75,6 +75,12 @@ output log, and open Noroshi's settings.
 | `noroshi.entrypointFilter` | `[]` | e.g. `["claude-vscode"]` to play only extension sessions |
 | `noroshi.statusBar.show` | `true` | Show the status bar item |
 
+`eventsFile`, `playerCommand`, and `sounds.*` run a local command or touch a local
+file, so they are restricted under [VSCode Workspace
+Trust](https://code.visualstudio.com/docs/editor/workspace-trust): in an untrusted
+workspace, a workspace/folder-level override of these is ignored, falling back to
+the user/default value (which Noroshi keeps operating on normally).
+
 ### Audio format
 
 The bundled defaults are WAV (the lowest common denominator every OS's default

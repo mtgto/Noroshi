@@ -96,6 +96,17 @@
       }
     }
   },
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": true,
+      "restrictedConfigurations": [
+        "noroshi.eventsFile",
+        "noroshi.playerCommand",
+        "noroshi.sounds.notification",
+        "noroshi.sounds.stop"
+      ]
+    }
+  },
   "scripts": {
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
