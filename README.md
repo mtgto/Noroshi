@@ -2,7 +2,8 @@
 
 A VSCode extension that plays a local sound effect when Claude Code (the VSCode
 extension) is "waiting for you" or "finished", even when Claude Code runs inside
-a Remote Container on a Kubernetes Pod.
+a Dev Container — whether that container is a local Docker container or a
+Kubernetes Pod.
 
 日本語版は [README.ja.md](README.ja.md) を参照してください。
 

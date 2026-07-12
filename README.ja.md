@@ -1,6 +1,6 @@
 # Noroshi
 
-Remote Container 上の Claude Code (VSCode 拡張版) の「応答待ち」「処理完了」を、手元 (ローカル) の効果音で通知する VSCode 拡張。
+Dev Container (ローカルの Docker コンテナ、または Kubernetes Pod) 上で動く Claude Code (VSCode 拡張版) の「応答待ち」「処理完了」を、手元 (ローカル) の効果音で通知する VSCode 拡張。
 
 English version: [README.md](README.md)
 
