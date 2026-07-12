@@ -4,7 +4,7 @@ const path = require("path");
 
 const SAMPLE_RATE = 44100;
 // Master gain applied to every tone. Lowered so the default sounds are subtle.
-const MASTER_GAIN = 0.05;
+const MASTER_GAIN = 0.01;
 
 /** Convert an array of numbers (-1..1) into a 16-bit PCM WAV Buffer. */
 function pcm16Wav(samples, sampleRate = SAMPLE_RATE) {
