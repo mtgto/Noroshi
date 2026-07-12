@@ -25,6 +25,12 @@ let output: vscode.OutputChannel;
 // after each await so overlapping config-change rebuilds don't race the disposer.
 let generation = 0;
 
+// eventsFile for which a real (non-discard) drain has actually delivered an event,
+// proving the hook works end-to-end even if checkHooksConfigured can't see it (e.g.
+// configured only in the user-level ~/.claude/settings.json). Keyed by eventsFile so
+// changing the setting doesn't carry over a stale confirmation.
+let confirmedEventsFile: string | null = null;
+
 // Snapshot of the state the status-bar menu needs, kept current by start() so the
 // menu command (invoked independently of start()'s lifecycle) always has an answer.
 interface MenuState {
@@ -110,7 +116,9 @@ async function start(context: vscode.ExtensionContext): Promise<void> {
     vscode.Uri.joinPath(folder.uri, ".claude", "settings.json").toString(),
     vscode.Uri.joinPath(folder.uri, ".claude", "settings.local.json").toString(),
   ];
-  const configured = await checkHooksConfigured(fs, settingsIds, s.eventsFile);
+  const configured =
+    (await checkHooksConfigured(fs, settingsIds, s.eventsFile)) ||
+    confirmedEventsFile === s.eventsFile;
   if (gen !== generation) return; // superseded by a newer start() during the await
   menuState.configured = configured;
   status.update(
@@ -136,11 +144,19 @@ async function start(context: vscode.ExtensionContext): Promise<void> {
     log: (m) => output.appendLine(m),
   });
 
-  const drain = new DrainCore(
-    fs,
-    eventsUri.toString(),
-    (e: RawEvent) => player.handle(e),
-    (m) => output.appendLine(m),
+  // A real drain (not the startup discard) delivering an event proves the hook
+  // works, even if it wasn't detected above (e.g. configured in ~/.claude/settings.json).
+  const onDrainedEvent = (e: RawEvent) => {
+    if (gen === generation && !menuState.configured) {
+      confirmedEventsFile = s.eventsFile;
+      menuState.configured = true;
+      status.update("active", `Watching: ${s.eventsFile}`);
+    }
+    player.handle(e);
+  };
+
+  const drain = new DrainCore(fs, eventsUri.toString(), onDrainedEvent, (m) =>
+    output.appendLine(m),
   );
 
   // Discard events accumulated while the extension was stopped (do not play them).
