@@ -103,6 +103,7 @@ output log, and open Noroshi's settings.
 | `noroshi.pollInterval` | `3000` | Safety-net polling interval (ms). 0 disables it |
 | `noroshi.debounceMs` | `250` | Suppression window (ms) for repeats of the same event |
 | `noroshi.entrypointFilter` | `[]` | e.g. `["claude-vscode"]` to play only extension sessions |
+| `noroshi.suppressWhenFocused` | `false` | Don't play a sound while this VSCode window is focused |
 | `noroshi.statusBar.show` | `true` | Show the status bar item |
 
 `eventsFile`, `playerCommand`, and `sounds.*` run a local command or touch a local

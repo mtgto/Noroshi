@@ -95,6 +95,7 @@ control-request サブタイプに対応するハンドラを持たなかった�
 | `noroshi.pollInterval` | `3000` | 安全網ポーリング (ms)。0 で無効 |
 | `noroshi.debounceMs` | `250` | 同種連打の抑制窓 (ms) |
 | `noroshi.entrypointFilter` | `[]` | 例 `["claude-vscode"]` で拡張版セッションのみ再生 |
+| `noroshi.suppressWhenFocused` | `false` | この VSCode ウィンドウがフォーカスされている間は音を鳴らさない |
 | `noroshi.statusBar.show` | `true` | ステータスバー表示 |
 
 `eventsFile` / `playerCommand` / `sounds.*` はローカルコマンドの実行やローカルファイルの操作に繋がるため、
