@@ -31,6 +31,16 @@ Noroshi (ローカル実行の UI 拡張) が `vscode.workspace.fs` でそれを
         ]
       }
     ],
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "printf '{\"event\":\"notification\",\"entrypoint\":\"%s\"}\\n' \"${CLAUDE_CODE_ENTRYPOINT:-unknown}\" >> \"$CLAUDE_PROJECT_DIR/.claude/noroshi-events.jsonl\"  # noroshi"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [
@@ -44,6 +54,12 @@ Noroshi (ローカル実行の UI 拡張) が `vscode.workspace.fs` でそれを
   }
 }
 ```
+
+`PermissionRequest` を含めているのは、VSCode 拡張では権限確認プロンプトで
+`Notification` が発火しないため
+([anthropics/claude-code#16114](https://github.com/anthropics/claude-code/issues/16114))。
+このフックはイベントファイルへの追記のみで許可/拒否の判断には一切関与しないため、
+ターミナル CLI 環境で残しておいても無害。
 
 `noroshi.eventsFile` を変えた場合は追記先パスも合わせること。
 

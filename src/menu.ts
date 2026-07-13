@@ -56,6 +56,13 @@ export function buildHookSnippet(eventsFile: string): string {
       Notification: [
         { hooks: [{ type: "command", command: hookCommand("notification", target) }] },
       ],
+      // The VSCode extension doesn't fire Notification for permission_prompt
+      // (github.com/anthropics/claude-code#16114), so PermissionRequest is the
+      // only reliable way to catch a permission-wait there; harmless elsewhere
+      // since this hook only appends to the events file and returns no decision.
+      PermissionRequest: [
+        { hooks: [{ type: "command", command: hookCommand("notification", target) }] },
+      ],
       Stop: [{ hooks: [{ type: "command", command: hookCommand("stop", target) }] }],
     },
   };

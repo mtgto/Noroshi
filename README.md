@@ -38,6 +38,16 @@ itself):
         ]
       }
     ],
+    "PermissionRequest": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "printf '{\"event\":\"notification\",\"entrypoint\":\"%s\"}\\n' \"${CLAUDE_CODE_ENTRYPOINT:-unknown}\" >> \"$CLAUDE_PROJECT_DIR/.claude/noroshi-events.jsonl\"  # noroshi"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [
@@ -51,6 +61,12 @@ itself):
   }
 }
 ```
+
+`PermissionRequest` is included because the VSCode extension does not fire
+`Notification` for permission prompts (upstream
+[anthropics/claude-code#16114](https://github.com/anthropics/claude-code/issues/16114));
+it's harmless to also keep in terminal CLI setups since this hook only appends
+to the events file and never affects the allow/deny decision.
 
 If you change `noroshi.eventsFile`, update the append target to match.
 

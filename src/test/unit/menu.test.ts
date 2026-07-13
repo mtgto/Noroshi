@@ -25,10 +25,16 @@ describe("buildMenuItems", () => {
 });
 
 describe("buildHookSnippet", () => {
-  it("produces valid JSON with a command hook for Notification and Stop", () => {
+  it("produces valid JSON with a command hook for Notification, PermissionRequest, and Stop", () => {
     const parsed = JSON.parse(buildHookSnippet(".claude/noroshi-events.jsonl"));
     expect(parsed.hooks.Notification[0].hooks[0].type).toBe("command");
+    expect(parsed.hooks.PermissionRequest[0].hooks[0].type).toBe("command");
     expect(parsed.hooks.Stop[0].hooks[0].type).toBe("command");
+  });
+
+  it("sends PermissionRequest through the same notification event kind as Notification", () => {
+    const parsed = JSON.parse(buildHookSnippet(".claude/noroshi-events.jsonl"));
+    expect(parsed.hooks.PermissionRequest[0].hooks[0].command).toContain('"event":"notification"');
   });
 
   it("targets a $CLAUDE_PROJECT_DIR-relative path for a relative eventsFile", () => {
