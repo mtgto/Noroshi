@@ -8,5 +8,6 @@
   "config.pollInterval.description": "watcher の取りこぼしを拾う安全網のポーリング間隔 (ミリ秒)。0 で無効。",
   "config.debounceMs.description": "イベントを鳴らした後、この時間 (ミリ秒) 以内の同種イベントは鳴らさない。0 で無効。",
   "config.entrypointFilter.description": "イベントの entrypoint 判別子で再生をフィルタする。空ならすべて鳴らす。例: [\"claude-vscode\"] で VSCode 拡張版セッションのみ再生。",
+  "config.suppressWhenFocused.description": "この VSCode ウィンドウがフォーカスされている間は音を鳴らさない。",
   "config.statusBar.show.description": "ステータスバーに Noroshi の状態を表示する。"
 }

@@ -8,5 +8,6 @@
   "config.pollInterval.description": "Polling interval (ms) as a safety net for missed watcher events. 0 disables it.",
   "config.debounceMs.description": "After playing an event, suppress the same event kind within this window (ms). 0 disables it.",
   "config.entrypointFilter.description": "Filter playback by the event entrypoint discriminator. Empty plays everything. Example: [\"claude-vscode\"] plays only VSCode extension sessions.",
+  "config.suppressWhenFocused.description": "Do not play a sound while this VSCode window is focused.",
   "config.statusBar.show.description": "Show the Noroshi status in the status bar."
 }
