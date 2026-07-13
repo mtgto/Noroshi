@@ -55,11 +55,18 @@ Noroshi (ローカル実行の UI 拡張) が `vscode.workspace.fs` でそれを
 }
 ```
 
-`PermissionRequest` を含めているのは、VSCode 拡張では権限確認プロンプトで
-`Notification` が発火しないため
-([anthropics/claude-code#16114](https://github.com/anthropics/claude-code/issues/16114))。
-このフックはイベントファイルへの追記のみで許可/拒否の判断には一切関与しないため、
-ターミナル CLI 環境で残しておいても無害。
+`PermissionRequest` も `Notification` と併せて設定している。ターミナル CLI では
+どちらも正常に発火する。**ただし VSCode 拡張では現状どちらも一切発火しない** —
+これは Noroshi のフックスニペット側では回避できない拡張側のバグで、拡張の
+`processControlRequest()` が `Notification` / `PermissionRequest` の
+control-request サブタイプに対応するハンドラを持たずエラーになるため、許可
+ダイアログ自体は普通に表示されるのにフックコマンドが呼ばれない
+(根本原因の解析は
+[anthropics/claude-code#8985 のコメント](https://github.com/anthropics/claude-code/issues/8985#issuecomment-3798023834)、
+最初の報告は
+[#16114](https://github.com/anthropics/claude-code/issues/16114) を参照)。
+それでも両方設定しておく価値はある: ターミナル CLI では既に動作するし、
+Anthropic 側で拡張のバグが直れば追加作業なしで拡張でも鳴るようになる。
 
 `noroshi.eventsFile` を変えた場合は追記先パスも合わせること。
 

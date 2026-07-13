@@ -62,11 +62,20 @@ itself):
 }
 ```
 
-`PermissionRequest` is included because the VSCode extension does not fire
-`Notification` for permission prompts (upstream
-[anthropics/claude-code#16114](https://github.com/anthropics/claude-code/issues/16114));
-it's harmless to also keep in terminal CLI setups since this hook only appends
-to the events file and never affects the allow/deny decision.
+`PermissionRequest` is included alongside `Notification` for completeness and
+because it fires correctly in the terminal CLI. **In the VSCode extension,
+neither currently fires at all** — this is an upstream extension bug, not
+something Noroshi's hook snippet can work around: the extension's
+`processControlRequest()` has no handler for the `Notification` /
+`PermissionRequest` control-request subtypes and errors out on them, so the
+hook command is never invoked, even though the permission dialog itself still
+appears normally (see
+[anthropics/claude-code#8985 (comment)](https://github.com/anthropics/claude-code/issues/8985#issuecomment-3798023834)
+for the root-cause analysis, and
+[#16114](https://github.com/anthropics/claude-code/issues/16114) for the
+original report). Both hooks are still worth configuring now: they already
+work in the terminal CLI, and will start working in the extension for free
+once Anthropic fixes the upstream bug.
 
 If you change `noroshi.eventsFile`, update the append target to match.
 
