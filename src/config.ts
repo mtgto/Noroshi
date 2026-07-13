@@ -9,6 +9,7 @@ export interface NoroshiSettings {
   pollInterval: number;
   debounceMs: number;
   entrypointFilter: string[];
+  suppressWhenFocused: boolean;
   statusBarShow: boolean;
 }
 

@@ -82,6 +82,7 @@ function readSettings(): NoroshiSettings {
     pollInterval: clampNonNegative(c.get("pollInterval", 3000), 3000),
     debounceMs: clampNonNegative(c.get("debounceMs", 250), 250),
     entrypointFilter: c.get("entrypointFilter", []),
+    suppressWhenFocused: c.get("suppressWhenFocused", false),
     statusBarShow: c.get("statusBar.show", true),
   };
 }
@@ -141,6 +142,8 @@ async function start(context: vscode.ExtensionContext): Promise<void> {
     soundFor,
     debounceMs: s.debounceMs,
     entrypointFilter: s.entrypointFilter,
+    suppressWhenFocused: s.suppressWhenFocused,
+    isFocused: () => vscode.window.state.focused,
     log: (m) => output.appendLine(m),
   });
 
