@@ -12,6 +12,8 @@ export interface PlayerOptions {
   soundFor: SoundResolver;
   debounceMs: number;
   entrypointFilter: string[];
+  suppressWhenFocused: boolean;
+  isFocused: () => boolean;
   log: (msg: string) => void;
 }
 
@@ -28,6 +30,11 @@ export class Player {
 
     if (entrypointFilter.length > 0) {
       if (!e.entrypoint || !entrypointFilter.includes(e.entrypoint)) return;
+    }
+
+    if (this.opts.suppressWhenFocused && this.opts.isFocused()) {
+      log(`skip event because window is focused: ${e.event}`);
+      return;
     }
 
     const file = soundFor(e.event);
