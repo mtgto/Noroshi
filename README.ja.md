@@ -55,18 +55,24 @@ Noroshi (ローカル実行の UI 拡張) が `vscode.workspace.fs` でそれを
 }
 ```
 
-`PermissionRequest` も `Notification` と併せて設定している。ターミナル CLI では
-どちらも正常に発火する。**ただし VSCode 拡張では現状どちらも一切発火しない** —
-これは Noroshi のフックスニペット側では回避できない拡張側のバグで、拡張の
+どちらのフックもターミナル CLI では正常に発火する。VSCode 拡張では
+`Notification` は現状一切発火しない — これは拡張の
 `processControlRequest()` が `Notification` / `PermissionRequest` の
-control-request サブタイプに対応するハンドラを持たずエラーになるため、許可
-ダイアログ自体は普通に表示されるのにフックコマンドが呼ばれない
-(根本原因の解析は
+control-request サブタイプに対応するハンドラを持たなかったために起きていた
+既知の上流バグ(根本原因の解析は
 [anthropics/claude-code#8985 のコメント](https://github.com/anthropics/claude-code/issues/8985#issuecomment-3798023834)、
 最初の報告は
 [#16114](https://github.com/anthropics/claude-code/issues/16114) を参照)。
-それでも両方設定しておく価値はある: ターミナル CLI では既に動作するし、
-Anthropic 側で拡張のバグが直れば追加作業なしで拡張でも鳴るようになる。
+一方 `PermissionRequest` は**その後修正されており**、Write/Edit/Bash 系の
+ツール実行許可ダイアログでも `AskUserQuestion` の選択ダイアログでも、拡張上
+(Claude Code 2.1.207 で確認)で発火することを実機検証済み。現状 Noroshi が
+拡張で音を鳴らせているのはこの `PermissionRequest` のおかげ。`Notification`
+も無害なのでスニペットには残しており、`idle_prompt` などターミナル CLI 側の
+ユースケースはこちらでしか拾えない。
+
+既知の未対応ケースが1つある: サンドボックスの「ネットワーク接続を許可しますか?」
+ダイアログ(`curl` 実行時などに出る)は、表示時にも選択後にもどちらのフックも
+発火しない。これは別の未対応コードパスらしく、現状 Noroshi 側で拾う手段がない。
 
 `noroshi.eventsFile` を変えた場合は追記先パスも合わせること。
 

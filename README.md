@@ -62,20 +62,25 @@ itself):
 }
 ```
 
-`PermissionRequest` is included alongside `Notification` for completeness and
-because it fires correctly in the terminal CLI. **In the VSCode extension,
-neither currently fires at all** — this is an upstream extension bug, not
-something Noroshi's hook snippet can work around: the extension's
-`processControlRequest()` has no handler for the `Notification` /
-`PermissionRequest` control-request subtypes and errors out on them, so the
-hook command is never invoked, even though the permission dialog itself still
-appears normally (see
+Both hooks fire in the terminal CLI. In the VSCode extension, `Notification`
+does not currently fire at all — this was a known upstream bug where the
+extension's `processControlRequest()` had no handler for the `Notification` /
+`PermissionRequest` control-request subtypes (see
 [anthropics/claude-code#8985 (comment)](https://github.com/anthropics/claude-code/issues/8985#issuecomment-3798023834)
 for the root-cause analysis, and
 [#16114](https://github.com/anthropics/claude-code/issues/16114) for the
-original report). Both hooks are still worth configuring now: they already
-work in the terminal CLI, and will start working in the extension for free
-once Anthropic fixes the upstream bug.
+original report). `PermissionRequest`, however, **has since been fixed** and
+was confirmed working in the extension (Claude Code 2.1.207) for both the
+tool-permission dialog (e.g. Write/Edit/Bash) and the `AskUserQuestion`
+elicitation dialog — this is the one that actually gets Noroshi its sound in
+the extension today. `Notification` is kept in the snippet anyway since it's
+harmless and still covers terminal CLI cases (like `idle_prompt`) that
+`PermissionRequest` doesn't.
+
+One known gap: the sandbox's "Allow network connection to this host?" dialog
+(shown e.g. for `curl`) does not fire either hook, on appearance or after a
+choice is made — it appears to go through a separate, still-unhooked code
+path. There's currently no way for Noroshi to catch that one.
 
 If you change `noroshi.eventsFile`, update the append target to match.
 

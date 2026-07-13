@@ -56,10 +56,11 @@ export function buildHookSnippet(eventsFile: string): string {
       Notification: [
         { hooks: [{ type: "command", command: hookCommand("notification", target) }] },
       ],
-      // Fires correctly in the terminal CLI; currently a no-op in the VSCode
-      // extension, which has no handler for this control-request subtype
-      // (github.com/anthropics/claude-code/issues/8985#issuecomment-3798023834),
-      // so include it now for when that upstream bug is fixed.
+      // Fires in both the terminal CLI and the VSCode extension (verified on
+      // 2.1.207 for both the tool-permission dialog and the AskUserQuestion
+      // elicitation dialog) — this is what actually gets Noroshi its sound in
+      // the extension, where Notification alone does not fire
+      // (github.com/anthropics/claude-code/issues/8985#issuecomment-3798023834).
       PermissionRequest: [
         { hooks: [{ type: "command", command: hookCommand("notification", target) }] },
       ],
