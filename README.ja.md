@@ -188,5 +188,4 @@ npm run compile       # tsc ビルド (out/)
 npm run lint          # oxlint
 npm run format        # oxfmt
 npm run test:integration  # 統合テスト (実 VSCode を起動。CI では xvfb-run が必要)
-npm run gen-sounds    # 同梱 WAV を再生成
 ```

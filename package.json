@@ -119,10 +119,9 @@
     "test:watch": "vitest",
     "test:integration": "vscode-test",
     "typecheck": "tsc --noEmit",
-    "lint": "oxlint src scripts",
-    "format": "oxfmt src scripts",
-    "format:check": "oxfmt --check src scripts",
-    "gen-sounds": "node scripts/gen-sounds.js",
+    "lint": "oxlint src",
+    "format": "oxfmt src",
+    "format:check": "oxfmt --check src",
     "vscode:prepublish": "npm run compile",
     "prepare": "lefthook install"
   },

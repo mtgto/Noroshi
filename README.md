@@ -203,7 +203,6 @@ npm run compile       # tsc build (out/)
 npm run lint          # oxlint
 npm run format        # oxfmt
 npm run test:integration  # integration test (launches a real VSCode; CI needs xvfb-run)
-npm run gen-sounds    # regenerate the bundled WAVs
 ```
 
 ## Manual smoke test (Remote Container)
