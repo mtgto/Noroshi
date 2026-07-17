@@ -123,7 +123,8 @@
         "noroshi.eventsFile",
         "noroshi.playerCommand",
         "noroshi.sounds.notification",
-        "noroshi.sounds.stop"
+        "noroshi.sounds.stop",
+        "noroshi.sounds.toolWait"
       ]
     }
   },
