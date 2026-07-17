@@ -65,6 +65,11 @@
           "default": "",
           "description": "%config.sounds.stop.description%"
         },
+        "noroshi.sounds.toolWait": {
+          "type": "string",
+          "default": "",
+          "description": "%config.sounds.toolWait.description%"
+        },
         "noroshi.playerCommand": {
           "type": "string",
           "default": "",
@@ -92,6 +97,16 @@
           "type": "boolean",
           "default": false,
           "description": "%config.suppressWhenFocused.description%"
+        },
+        "noroshi.toolWait.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "%config.toolWait.enabled.description%"
+        },
+        "noroshi.toolWait.thresholdMs": {
+          "type": "number",
+          "default": 30000,
+          "description": "%config.toolWait.thresholdMs.description%"
         },
         "noroshi.statusBar.show": {
           "type": "boolean",

@@ -70,9 +70,25 @@ control-request サブタイプに対応するハンドラを持たなかった�
 も無害なのでスニペットには残しており、`idle_prompt` などターミナル CLI 側の
 ユースケースはこちらでしか拾えない。
 
-既知の未対応ケースが1つある: サンドボックスの「ネットワーク接続を許可しますか?」
-ダイアログ(`curl` 実行時などに出る)は、表示時にも選択後にもどちらのフックも
-発火しない。これは別の未対応コードパスらしく、現状 Noroshi 側で拾う手段がない。
+既知の穴が1つある。サンドボックスの「Allow network connection to this host?」
+ダイアログ (`curl` などで出る) は、表示時にも選択後にもどちらの hook も発火しない。
+これは許可判断の地点ではない — Bash はすでに許可されて実行中であり、サンドボックスが
+ツール実行の内側からダイアログを出す — ため、捕まえられる hook が存在しない。
+
+オプトインの `noroshi.toolWait.enabled` は、これを反対側から回避する。**どのツール**でも
+`noroshi.toolWait.thresholdMs` を超えて未完了なら音を鳴らす。`PreToolUse` と `PostToolUse`
+がダイアログを挟み込むので、ダイアログ自体は観測できなくても待ち時間は観測できる。
+代償として、遅いビルドと詰まったダイアログは区別できない — 長い `npm test` でも鳴る。
+気になるなら閾値を上げること。
+
+有効にすると hook スニペットが変わる。ツール系の hook は stdin の JSON から `session_id`
+を取る必要があり (`CLAUDE_SESSION_ID` 環境変数は存在しない)、`printf` ではなく JSON
+パーサを使うためである。**有効化後にスニペットを貼り直すこと。** メニューが
+`jq` / `python3` / `node` / `ruby` のどれが Claude Code の実行環境にあるかを尋ねる。
+持っている中で一番速いものを選ぶこと。`PreToolUse` は hook の終了までブロックするので、
+起動コストが全ツール呼び出しに乗る (`jq` 約6ms、`python3` 約22ms、`node` 約30ms、
+`ruby` 約88ms)。なお VSCode 自身の `node` はその PATH には居ない — パーサは Claude Code
+の実行環境側に存在する必要がある。
 
 `noroshi.eventsFile` を変えた場合は追記先パスも合わせること。
 
@@ -90,12 +106,14 @@ control-request サブタイプに対応するハンドラを持たなかった�
 |---|---|---|
 | `noroshi.enabled` | `true` | 有効/無効 |
 | `noroshi.eventsFile` | `.claude/noroshi-events.jsonl` | 監視ファイル (相対=ワークスペース基準 / 絶対=Pod 絶対パス) |
-| `noroshi.sounds.notification` / `.stop` | `""` | 音声上書き (空=同梱 WAV) |
+| `noroshi.sounds.notification` / `.stop` / `.toolWait` | `""` | 音声上書き (空=同梱 WAV) |
 | `noroshi.playerCommand` | `""` | 再生コマンド。`${file}` 置換。空=OS 既定 |
 | `noroshi.pollInterval` | `3000` | 安全網ポーリング (ms)。0 で無効 |
 | `noroshi.debounceMs` | `250` | 同種連打の抑制窓 (ms) |
 | `noroshi.entrypointFilter` | `[]` | 例 `["claude-vscode"]` で拡張版セッションのみ再生 |
 | `noroshi.suppressWhenFocused` | `false` | この VSCode ウィンドウがフォーカスされている間は音を鳴らさない |
+| `noroshi.toolWait.enabled` | `false` | ツール呼び出しが閾値を超えて未完了なら音を鳴らす (下記参照) |
+| `noroshi.toolWait.thresholdMs` | `30000` | 音を鳴らすまでの未完了許容時間 (ミリ秒) |
 | `noroshi.statusBar.show` | `true` | ステータスバー表示 |
 
 `eventsFile` / `playerCommand` / `sounds.*` はローカルコマンドの実行やローカルファイルの操作に繋がるため、

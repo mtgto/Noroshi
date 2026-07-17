@@ -79,8 +79,25 @@ harmless and still covers terminal CLI cases (like `idle_prompt`) that
 
 One known gap: the sandbox's "Allow network connection to this host?" dialog
 (shown e.g. for `curl`) does not fire either hook, on appearance or after a
-choice is made — it appears to go through a separate, still-unhooked code
-path. There's currently no way for Noroshi to catch that one.
+choice is made. That dialog is not a permission decision point — Bash has
+already been permitted and is already running, and the sandbox raises the
+prompt from inside tool execution — so no hook exists to catch it.
+
+The opt-in `noroshi.toolWait.enabled` works around this from the other side: it
+plays a sound when *any* tool call stays outstanding longer than
+`noroshi.toolWait.thresholdMs`. `PreToolUse` and `PostToolUse` straddle the
+dialog, so the wait is observable even though the dialog isn't. The trade-off is
+that a slow build and a blocked dialog are indistinguishable — a long `npm test`
+will also play the sound. Raise the threshold if that bothers you.
+
+Enabling it changes the hook snippet: the tool hooks need `session_id` from the
+hook's stdin JSON (there is no `CLAUDE_SESSION_ID` env var), so they run a JSON
+parser instead of `printf`. **Copy the hook snippet again after enabling** — the
+menu will ask which of `jq` / `python3` / `node` / `ruby` is available where
+Claude Code runs. Pick the fastest one you have: `PreToolUse` blocks until the
+hook exits, so its startup cost is added to every tool call (`jq` ~6ms,
+`python3` ~22ms, `node` ~30ms, `ruby` ~88ms). Note that VSCode's own `node` is
+not on that PATH — the parser must exist in the Claude Code environment itself.
 
 If you change `noroshi.eventsFile`, update the append target to match.
 
@@ -98,12 +115,14 @@ output log, and open Noroshi's settings.
 |---|---|---|
 | `noroshi.enabled` | `true` | Enable/disable Noroshi |
 | `noroshi.eventsFile` | `.claude/noroshi-events.jsonl` | File to watch (relative = workspace-based, absolute = an absolute path on the remote Pod) |
-| `noroshi.sounds.notification` / `.stop` | `""` | Override sound (empty = bundled WAV) |
+| `noroshi.sounds.notification` / `.stop` / `.toolWait` | `""` | Override sound (empty = bundled WAV) |
 | `noroshi.playerCommand` | `""` | Playback command. `${file}` is substituted. Empty = OS default |
 | `noroshi.pollInterval` | `3000` | Safety-net polling interval (ms). 0 disables it |
 | `noroshi.debounceMs` | `250` | Suppression window (ms) for repeats of the same event |
 | `noroshi.entrypointFilter` | `[]` | e.g. `["claude-vscode"]` to play only extension sessions |
 | `noroshi.suppressWhenFocused` | `false` | Don't play a sound while this VSCode window is focused |
+| `noroshi.toolWait.enabled` | `false` | Play a sound when a tool call stays outstanding past the threshold (see below) |
+| `noroshi.toolWait.thresholdMs` | `30000` | How long (ms) a tool may stay outstanding before the sound |
 | `noroshi.statusBar.show` | `true` | Show the status bar item |
 
 `eventsFile`, `playerCommand`, and `sounds.*` run a local command or touch a local
