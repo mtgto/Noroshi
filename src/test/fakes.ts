@@ -1,6 +1,7 @@
 import type { FileSystem, FileStat } from "../fileSystem";
 import type { CommandRunner } from "../commandRunner";
 import type { Clock } from "../clock";
+import type { Timers } from "../timers";
 
 // In-memory/no-op stand-ins for the DI seams (FileSystem, CommandRunner, Clock)
 // so unit tests can drive DrainCore/Player/setupChecker without vscode or the OS.
@@ -58,5 +59,45 @@ export class FakeClock implements Clock {
   }
   advance(ms: number): void {
     this.t += ms;
+  }
+}
+
+/** Stands in for RealTimers: timers fire on advance() instead of the event loop. */
+export class FakeTimers implements Timers {
+  private nextId = 1;
+  private pending = new Map<number, { fn: () => void; due: number }>();
+  private t = 0;
+
+  setTimeout(fn: () => void, ms: number): unknown {
+    const id = this.nextId++;
+    this.pending.set(id, { fn, due: this.t + ms });
+    return id;
+  }
+
+  clearTimeout(handle: unknown): void {
+    this.pending.delete(handle as number);
+  }
+
+  /** Advance time and run every timer whose deadline has passed. */
+  advance(ms: number): void {
+    this.t += ms;
+    const toDelete: number[] = [];
+    const toCall: (() => void)[] = [];
+    for (const [id, entry] of this.pending) {
+      if (entry.due <= this.t) {
+        toDelete.push(id);
+        toCall.push(entry.fn);
+      }
+    }
+    for (const id of toDelete) {
+      this.pending.delete(id);
+    }
+    for (const fn of toCall) {
+      fn();
+    }
+  }
+
+  get pendingCount(): number {
+    return this.pending.size;
   }
 }
