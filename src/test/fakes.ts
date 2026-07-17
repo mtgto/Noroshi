@@ -23,6 +23,12 @@ export class FakeFileSystem implements FileSystem {
     if (v === undefined) throw Object.assign(new Error("ENOENT"), { code: "ENOENT" });
     return v;
   }
+  async writeFile(id: string, content: string): Promise<void> {
+    this.files.set(id, content);
+  }
+  async createDirectory(_id: string): Promise<void> {
+    // Directories are implicit in the flat id -> content map.
+  }
   async rename(fromId: string, toId: string): Promise<void> {
     const v = this.files.get(fromId);
     if (v === undefined) throw Object.assign(new Error("ENOENT"), { code: "ENOENT" });

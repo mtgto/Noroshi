@@ -40,6 +40,10 @@
       {
         "command": "noroshi.showMenu",
         "title": "%command.showMenu.title%"
+      },
+      {
+        "command": "noroshi.installClaudeCodeHooks",
+        "title": "%command.installClaudeCodeHooks.title%"
       }
     ],
     "configuration": {

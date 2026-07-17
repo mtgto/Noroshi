@@ -1,5 +1,6 @@
 {
   "command.showMenu.title": "Noroshi: Show Menu",
+  "command.installClaudeCodeHooks.title": "Noroshi: Install Claude Code Hooks",
   "config.enabled.description": "Enable Noroshi sound notifications.",
   "config.eventsFile.description": "Events file to watch. A relative path is resolved against the workspace; an absolute path is treated as an absolute path on the remote (Pod).",
   "config.sounds.notification.description": "Sound file played when Claude is waiting for you. Empty uses the bundled WAV.",

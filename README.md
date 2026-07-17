@@ -20,10 +20,33 @@ system.
 
 ## Setup
 
-### 1. Configure the hook (manual)
+### 1. Install the hooks
 
-Add the following to `.claude/settings.json` (Noroshi never edits `settings.json`
-itself):
+Run **Noroshi: Install Claude Code Hooks** from the Command Palette (or click the
+status bar item and pick *Install Claude Code Hooks*). It adds the hooks to this
+workspace's `.claude/settings.json` or `.claude/settings.local.json` for you.
+
+Where it writes:
+
+- If `.claude/settings.local.json` exists, it goes there — Noroshi is a personal
+  preference and that file is normally untracked by git.
+- If neither file exists, `.claude/settings.json` is created.
+- If only `.claude/settings.json` exists, you're asked which one to use.
+
+Existing hooks are kept: the file is merged, not overwritten, and only the
+entries Noroshi needs are added. Running it twice is a no-op. If the settings
+file isn't valid JSON, Noroshi leaves it completely alone and tells you so.
+
+Note that hooks are matched by their exact command, so if you change
+`noroshi.eventsFile` and install again, the entry pointing at the old file stays
+behind — Noroshi won't delete hook entries it might not own. Remove it by hand if
+you want to tidy up; a stale entry only appends to a file nobody watches.
+
+### 2. Configuring the hook by hand
+
+You don't need this if you used **Install Claude Code Hooks** above. To write it
+yourself,
+add the following to `.claude/settings.json`:
 
 ```json
 {
@@ -84,13 +107,12 @@ path. There's currently no way for Noroshi to catch that one.
 
 If you change `noroshi.eventsFile`, update the append target to match.
 
-### 2. Status bar
+### 3. Status bar
 
 `🔊 Noroshi` means the hook was detected. `⚠️ Noroshi` means the hook is not
 configured. Click it (or run **Noroshi: Show Menu** from the Command Palette) to
-open a menu with: copy the hook snippet to the clipboard (pre-filled with your
-`noroshi.eventsFile`), open this setup guide, enable/disable Noroshi, show the
-output log, and open Noroshi's settings.
+open a menu with: install the hooks, open this setup guide, enable/disable
+Noroshi, show the output log, and open Noroshi's settings.
 
 ## Settings
 
