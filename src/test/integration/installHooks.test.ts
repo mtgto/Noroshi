@@ -5,11 +5,13 @@ import * as vscode from "vscode";
 
 // Drives the real noroshi.installClaudeCodeHooks command in a real extension host against the
 // real workspace file system. Only the cases that need no QuickPick are covered here
-// (a missing settings.local.json plus a missing/parsable settings.json), since the
-// picker can't be driven headlessly; pickSettingsTarget is unit-tested separately.
+// (no settings.local.json and no settings.json, or an existing settings.local.json),
+// since the picker can't be driven headlessly; pickSettingsTarget is unit-tested
+// separately, including the "only settings.json exists" case that would need one.
 suite("Noroshi installHooks", () => {
   const folder = vscode.workspace.workspaceFolders![0].uri;
   const settingsPath = path.join(folder.fsPath, ".claude", "settings.json");
+  const localSettingsPath = path.join(folder.fsPath, ".claude", "settings.local.json");
 
   setup(() => {
     fs.rmSync(path.join(folder.fsPath, ".claude"), { recursive: true, force: true });
@@ -32,10 +34,10 @@ suite("Noroshi installHooks", () => {
     }
   });
 
-  test("merges into an existing settings.json without dropping other hooks", async () => {
-    fs.mkdirSync(path.dirname(settingsPath), { recursive: true });
+  test("merges into an existing settings.local.json without dropping other hooks", async () => {
+    fs.mkdirSync(path.dirname(localSettingsPath), { recursive: true });
     fs.writeFileSync(
-      settingsPath,
+      localSettingsPath,
       JSON.stringify({
         permissions: { allow: ["Bash(npm test)"] },
         hooks: {
@@ -45,9 +47,9 @@ suite("Noroshi installHooks", () => {
     );
 
     void vscode.commands.executeCommand("noroshi.installClaudeCodeHooks");
-    await waitFor(() => readJson(settingsPath).hooks?.Stop !== undefined, 5000);
+    await waitFor(() => readJson(localSettingsPath).hooks?.Stop !== undefined, 5000);
 
-    const parsed = readJson(settingsPath);
+    const parsed = readJson(localSettingsPath);
     assert.deepStrictEqual(parsed.permissions.allow, ["Bash(npm test)"], "unrelated keys survive");
     assert.strictEqual(
       parsed.hooks.PreToolUse[0].hooks[0].command,
@@ -57,14 +59,14 @@ suite("Noroshi installHooks", () => {
     assert.strictEqual(parsed.hooks.Stop.length, 1);
   });
 
-  test("leaves an unparsable settings.json untouched", async () => {
-    fs.mkdirSync(path.dirname(settingsPath), { recursive: true });
-    fs.writeFileSync(settingsPath, "{ not json");
+  test("leaves an unparsable settings.local.json untouched", async () => {
+    fs.mkdirSync(path.dirname(localSettingsPath), { recursive: true });
+    fs.writeFileSync(localSettingsPath, "{ not json");
 
     void vscode.commands.executeCommand("noroshi.installClaudeCodeHooks");
     await sleep(1000);
 
-    assert.strictEqual(fs.readFileSync(settingsPath, "utf8"), "{ not json");
+    assert.strictEqual(fs.readFileSync(localSettingsPath, "utf8"), "{ not json");
   });
 });
 
