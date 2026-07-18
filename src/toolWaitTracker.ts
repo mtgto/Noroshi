@@ -13,7 +13,12 @@ export interface ToolWaitTrackerOptions {
 }
 
 interface SessionState {
-  promptId: string;
+  /**
+   * Optional: requires Claude Code v2.1.196+ (older versions never send it on
+   * PreToolUse/PostToolUse). Used opportunistically for turn-boundary
+   * self-healing; its absence never blocks tracking.
+   */
+  promptId: string | undefined;
   count: number;
   timer: unknown | null;
   /** From the tool_start that armed the timer; for the log line only. */
@@ -25,36 +30,48 @@ interface SessionState {
  * Turns tool_start/tool_end hook events into a toolWait event when a tool stays
  * outstanding past the threshold.
  *
- * Hook payloads carry no tool_use_id, so individual calls cannot be correlated;
- * only an aggregate per-session count is available. That is enough for the
- * question being asked ("is any tool still outstanding?").
+ * Hook payloads were assumed to carry no tool_use_id, but empirically they do
+ * (confirmed on Claude Code 2.1.142 and 2.1.212). It is undocumented for
+ * PostToolUse, though, so it is not relied on for correlation — only an
+ * aggregate per-session count is tracked. That is enough for the question
+ * being asked ("is any tool still outstanding?").
  *
  * The timer arms only on the 0 -> 1 transition. If the count gets stuck above
  * zero (a denied tool fires no PostToolUse), the timer is never re-armed, so
- * the feature goes silent rather than repeating. reset() on Stop and a
- * prompt_id change both recover it.
+ * the feature goes silent rather than repeating. reset() on Stop recovers it
+ * unconditionally; a prompt_id change recovers it opportunistically when the
+ * Claude Code version sends prompt_id (v2.1.196+) — its absence (confirmed on
+ * 2.1.142) never blocks event processing, only this bonus recovery path.
  */
 export class ToolWaitTracker {
   private sessions = new Map<string, SessionState>();
+  private warnedMissingPromptId = false;
 
   constructor(private readonly opts: ToolWaitTrackerOptions) {}
 
   handle(e: RawEvent): void {
     const sessionId = e.session_id;
-    const promptId = e.prompt_id;
     const toolName = e.tool_name;
-    if (!sessionId || !promptId || !toolName) {
-      this.opts.log(
-        `skip ${e.event} without session_id/prompt_id/tool_name (check the hook snippet)`,
-      );
+    if (!sessionId || !toolName) {
+      this.opts.log(`skip ${e.event} without session_id/tool_name (check the hook snippet)`);
       return;
     }
 
+    const promptId = e.prompt_id;
+    if (!promptId && !this.warnedMissingPromptId) {
+      this.warnedMissingPromptId = true;
+      this.opts.log(
+        "tool_start/tool_end events are missing prompt_id — if this persists, update the " +
+          "Claude Code VSCode extension to v2.1.196 or later for full turn-boundary recovery",
+      );
+    }
+
     let s = this.sessions.get(sessionId);
-    if (s && s.promptId !== promptId) {
+    if (s && promptId && s.promptId && s.promptId !== promptId) {
       // A new turn started. Anything still outstanding belonged to the previous
       // prompt and can no longer complete, so drop it rather than let it block
-      // this turn's timer from arming.
+      // this turn's timer from arming. Only fires when both sides actually
+      // have a prompt_id to compare — see the class doc comment.
       this.disarm(s);
       this.sessions.delete(sessionId);
       s = undefined;

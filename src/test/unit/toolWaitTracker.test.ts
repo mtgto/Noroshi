@@ -128,7 +128,6 @@ describe("ToolWaitTracker", () => {
 
   it.each([
     ["session_id", { session_id: undefined }],
-    ["prompt_id", { prompt_id: undefined }],
     ["tool_name", { tool_name: undefined }],
   ])("ignores and logs a tool_start missing %s", (_field, over) => {
     const { timers, played, logs, tracker } = make();
@@ -137,6 +136,38 @@ describe("ToolWaitTracker", () => {
     expect(played).toEqual([]);
     expect(logs).toHaveLength(1);
     expect(logs[0]).toContain("tool_start");
+  });
+
+  it("still fires when prompt_id is missing (older Claude Code versions omit it)", () => {
+    const { timers, played, tracker } = make();
+    tracker.handle(ev("tool_start", { prompt_id: undefined }));
+    timers.advance(THRESHOLD);
+    expect(played.map((e) => e.event)).toEqual(["toolWait"]);
+  });
+
+  it("logs a one-time hint when prompt_id is missing, not once per event", () => {
+    const { logs, tracker } = make();
+    tracker.handle(ev("tool_start", { prompt_id: undefined }));
+    tracker.handle(ev("tool_end", { prompt_id: undefined }));
+    tracker.handle(ev("tool_start", { prompt_id: undefined }));
+    const hints = logs.filter((l) => l.includes("prompt_id") && l.includes("v2.1.196"));
+    expect(hints).toHaveLength(1);
+  });
+
+  it("does not log the missing-prompt_id hint once prompt_id is present", () => {
+    const { logs, tracker } = make();
+    tracker.handle(ev("tool_start"));
+    const hints = logs.filter((l) => l.includes("v2.1.196"));
+    expect(hints).toEqual([]);
+  });
+
+  it("does not spuriously reset state across consecutive events lacking prompt_id", () => {
+    const { timers, played, tracker } = make();
+    tracker.handle(ev("tool_start", { prompt_id: undefined }));
+    tracker.handle(ev("tool_start", { prompt_id: undefined })); // count 1 -> 2, must not reset to 1
+    tracker.handle(ev("tool_end", { prompt_id: undefined })); // count 2 -> 1, still outstanding
+    timers.advance(THRESHOLD);
+    expect(played.map((e) => e.event)).toEqual(["toolWait"]);
   });
 
   it("ignores a line whose required fields are null", () => {
