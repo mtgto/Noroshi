@@ -107,4 +107,27 @@ describe("buildHookSnippet", () => {
       expect(snippet).not.toContain("tool_input");
     }
   });
+
+  it("isolates the printf hooks from a failed append", () => {
+    const parsed = JSON.parse(buildHookSnippet(".claude/noroshi-events.jsonl"));
+    for (const event of ["Notification", "PermissionRequest", "Stop"]) {
+      expect(parsed.hooks[event][0].hooks[0].command).toContain("2>/dev/null || true");
+    }
+  });
+
+  it.each(["jq", "python3", "node", "ruby"] as const)(
+    "isolates every hook command from a failed append for %s",
+    (interp) => {
+      const parsed = JSON.parse(buildHookSnippet(".claude/noroshi-events.jsonl", interp));
+      for (const event of [
+        "Notification",
+        "PermissionRequest",
+        "Stop",
+        "PreToolUse",
+        "PostToolUse",
+      ]) {
+        expect(parsed.hooks[event][0].hooks[0].command).toContain("2>/dev/null || true");
+      }
+    },
+  );
 });

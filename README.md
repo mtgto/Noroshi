@@ -88,7 +88,7 @@ plays a sound when *any* tool call stays outstanding longer than
 `noroshi.toolWait.thresholdMs`. `PreToolUse` and `PostToolUse` straddle the
 dialog, so the wait is observable even though the dialog isn't. The trade-off is
 that a slow build and a blocked dialog are indistinguishable — a long `npm test`
-will also play the sound. Raise the threshold if that bothers you.
+will also play the sound. Raise the threshold if that bothers you. One caveat: if you deny a tool, Noroshi stays silent for the rest of that turn — the outstanding-tool count can't unwind without a completion — and resumes on your next prompt.
 
 Enabling it changes the hook snippet: the tool hooks need `session_id` from the
 hook's stdin JSON (there is no `CLAUDE_SESSION_ID` env var), so they run a JSON

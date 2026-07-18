@@ -120,10 +120,20 @@ export function buildHookSnippet(
   return JSON.stringify({ hooks }, null, 2);
 }
 
+// Wrap a hook body so a failed append can never fail the hook. Claude Code
+// treats a PreToolUse exit code 2 as "block this tool call", and dash exits
+// non-zero when the events file's directory is missing — without this, a
+// misconfigured hook would block every tool call instead of just failing to
+// play a sound. The group-level 2>/dev/null also swallows the shell's
+// redirection-error message so it never reaches the model.
+function appendIsolated(body: string, target: string): string {
+  return `{ ${body} >> "${target}"; } 2>/dev/null || true  # noroshi`;
+}
+
 function printfCommand(kind: "notification" | "stop", target: string): string {
-  return (
-    `printf '{"event":"${kind}","entrypoint":"%s"}\\n' ` +
-    `"\${CLAUDE_CODE_ENTRYPOINT:-unknown}" >> "${target}"  # noroshi`
+  return appendIsolated(
+    `printf '{"event":"${kind}","entrypoint":"%s"}\\n' "\${CLAUDE_CODE_ENTRYPOINT:-unknown}"`,
+    target,
   );
 }
 
@@ -141,7 +151,7 @@ function parserCommand(
   target: string,
   withToolName: boolean,
 ): string {
-  return `${parserBody(interp, kind, withToolName)} >> "${target}"  # noroshi`;
+  return appendIsolated(parserBody(interp, kind, withToolName), target);
 }
 
 function parserBody(interp: HookInterpreter, kind: string, withToolName: boolean): string {
