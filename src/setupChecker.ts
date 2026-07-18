@@ -1,4 +1,5 @@
 import type { FileSystem } from "./fileSystem";
+import { readIfPresent } from "./fsHelpers";
 
 /**
  * Returns true if any of the settings files contains needle (read-only). Passing
@@ -11,13 +12,8 @@ export async function checkHooksConfigured(
   needle: string,
 ): Promise<boolean> {
   for (const id of settingsIds) {
-    let content: string;
-    try {
-      content = await fs.readFile(id);
-    } catch {
-      continue; // absent or unreadable
-    }
-    if (content.includes(needle)) return true;
+    const content = await readIfPresent(fs, id);
+    if (content?.includes(needle)) return true;
   }
   return false;
 }

@@ -249,13 +249,16 @@ async function installHooks(rebuild: () => void): Promise<void> {
     void vscode.window.showWarningMessage("Noroshi: open a folder before installing hooks.");
     return;
   }
-  const uriFor = (t: SettingsTarget) =>
-    vscode.Uri.joinPath(folder.uri, ".claude", SETTINGS_FILE[t]);
+  const claudeDir = vscode.Uri.joinPath(folder.uri, ".claude");
+  const uris: Record<SettingsTarget, vscode.Uri> = {
+    local: vscode.Uri.joinPath(claudeDir, SETTINGS_FILE.local),
+    shared: vscode.Uri.joinPath(claudeDir, SETTINGS_FILE.shared),
+  };
 
   const outcome = await installHooksCore({
     fs: new VSCodeFileSystem(),
-    dirId: vscode.Uri.joinPath(folder.uri, ".claude").toString(),
-    fileIds: { local: uriFor("local").toString(), shared: uriFor("shared").toString() },
+    dirId: claudeDir.toString(),
+    fileIds: { local: uris.local.toString(), shared: uris.shared.toString() },
     eventsFile: readSettings().eventsFile,
     askTarget,
   });
@@ -287,7 +290,7 @@ async function installHooks(rebuild: () => void): Promise<void> {
         `Noroshi: hooks installed in .claude/${SETTINGS_FILE[outcome.target]}.`,
         "Open File",
       );
-      if (open) void vscode.window.showTextDocument(uriFor(outcome.target));
+      if (open) void vscode.window.showTextDocument(uris[outcome.target]);
       return;
     }
   }

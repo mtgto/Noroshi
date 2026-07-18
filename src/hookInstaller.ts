@@ -1,5 +1,6 @@
 import { isAbsolutePath } from "./config";
 import type { FileSystem } from "./fileSystem";
+import { readIfPresent } from "./fsHelpers";
 
 export interface HookCommand {
   type: "command";
@@ -155,14 +156,6 @@ export async function installHooksCore(deps: InstallHooksDeps): Promise<InstallO
   await fs.createDirectory(dirId);
   await fs.writeFile(fileIds[target], result.content);
   return { kind: "installed", target, resultKind: result.kind };
-}
-
-async function readIfPresent(fs: FileSystem, id: string): Promise<string | null> {
-  try {
-    return await fs.readFile(id);
-  } catch {
-    return null; // absent — mergeHooks creates the file from scratch
-  }
 }
 
 function entry(command: string): HookEntry {

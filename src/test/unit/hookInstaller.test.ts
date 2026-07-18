@@ -158,16 +158,12 @@ describe("installHooksCore", () => {
   const noAsk = () => {
     throw new Error("askTarget should not be called");
   };
+  const install = (fs: FakeFileSystem, askTarget = noAsk) =>
+    installHooksCore({ fs, dirId, fileIds, eventsFile: EVENTS_FILE, askTarget });
 
   it("creates settings.json when nothing exists", async () => {
     const fs = new FakeFileSystem();
-    const outcome = await installHooksCore({
-      fs,
-      dirId,
-      fileIds,
-      eventsFile: EVENTS_FILE,
-      askTarget: noAsk,
-    });
+    const outcome = await install(fs);
 
     expect(outcome).toEqual({ kind: "installed", target: "shared", resultKind: "created" });
     const parsed = JSON.parse(await fs.readFile(fileIds.shared));
@@ -183,13 +179,7 @@ describe("installHooksCore", () => {
         },
       }),
     });
-    const outcome = await installHooksCore({
-      fs,
-      dirId,
-      fileIds,
-      eventsFile: EVENTS_FILE,
-      askTarget: noAsk,
-    });
+    const outcome = await install(fs);
 
     expect(outcome).toEqual({ kind: "installed", target: "local", resultKind: "updated" });
     const parsed = JSON.parse(await fs.readFile(fileIds.local));
@@ -200,13 +190,7 @@ describe("installHooksCore", () => {
 
   it("leaves an unparsable settings.local.json untouched", async () => {
     const fs = new FakeFileSystem({ [fileIds.local]: "{ not json" });
-    const outcome = await installHooksCore({
-      fs,
-      dirId,
-      fileIds,
-      eventsFile: EVENTS_FILE,
-      askTarget: noAsk,
-    });
+    const outcome = await install(fs);
 
     expect(outcome).toEqual({ kind: "unparsable", target: "local" });
     expect(await fs.readFile(fileIds.local)).toBe("{ not json");
@@ -215,28 +199,16 @@ describe("installHooksCore", () => {
   it("reports unchanged when the hooks are already installed", async () => {
     const alreadyInstalled = contentOf(mergeHooks(null, EVENTS_FILE));
     const fs = new FakeFileSystem({ [fileIds.local]: alreadyInstalled });
-    const outcome = await installHooksCore({
-      fs,
-      dirId,
-      fileIds,
-      eventsFile: EVENTS_FILE,
-      askTarget: noAsk,
-    });
+    const outcome = await install(fs);
 
     expect(outcome).toEqual({ kind: "unchanged", target: "local" });
   });
 
   it("asks when only settings.json exists, and installs into the chosen target", async () => {
     const fs = new FakeFileSystem({ [fileIds.shared]: "{}" });
-    const outcome = await installHooksCore({
-      fs,
-      dirId,
-      fileIds,
-      eventsFile: EVENTS_FILE,
-      askTarget: async (choices) => {
-        expect(choices).toEqual(["local", "shared"]);
-        return "local";
-      },
+    const outcome = await install(fs, async (choices) => {
+      expect(choices).toEqual(["local", "shared"]);
+      return "local";
     });
 
     expect(outcome).toEqual({ kind: "installed", target: "local", resultKind: "created" });
@@ -245,13 +217,7 @@ describe("installHooksCore", () => {
 
   it("cancels without writing when the user dismisses the picker", async () => {
     const fs = new FakeFileSystem({ [fileIds.shared]: "{}" });
-    const outcome = await installHooksCore({
-      fs,
-      dirId,
-      fileIds,
-      eventsFile: EVENTS_FILE,
-      askTarget: async () => undefined,
-    });
+    const outcome = await install(fs, async () => undefined);
 
     expect(outcome).toEqual({ kind: "cancelled" });
     expect(fs.has(fileIds.local)).toBe(false);
