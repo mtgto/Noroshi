@@ -9,5 +9,8 @@
   "config.debounceMs.description": "After playing an event, suppress the same event kind within this window (ms). 0 disables it.",
   "config.entrypointFilter.description": "Filter playback by the event entrypoint discriminator. Empty plays everything. Example: [\"claude-vscode\"] plays only VSCode extension sessions.",
   "config.suppressWhenFocused.description": "Do not play a sound while this VSCode window is focused.",
+  "config.sounds.toolWait.description": "Sound file played when a tool call stays outstanding past noroshi.toolWait.thresholdMs. Empty uses the bundled WAV.",
+  "config.toolWait.enabled.description": "Play a sound when a tool call stays outstanding past the threshold. Requires the PreToolUse/PostToolUse hooks (copy the hook snippet again after enabling). Heuristic: it cannot tell a blocked permission dialog from a slow build.",
+  "config.toolWait.thresholdMs.description": "How long (ms) a tool call may stay outstanding before Noroshi plays a sound.",
   "config.statusBar.show.description": "Show the Noroshi status in the status bar."
 }

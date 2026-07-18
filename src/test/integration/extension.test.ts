@@ -31,6 +31,68 @@ suite("Noroshi integration", () => {
     await waitFor(() => fs.existsSync(marker), 5000);
     assert.ok(fs.existsSync(marker), "player command should have run");
   });
+
+  test("plays a sound when a tool_start stays outstanding past the threshold", async () => {
+    const folder = vscode.workspace.workspaceFolders![0].uri;
+    const marker = path.join(os.tmpdir(), `noroshi-toolwait-${Date.now()}.txt`);
+
+    const cfg = vscode.workspace.getConfiguration("noroshi");
+    await cfg.update(
+      "playerCommand",
+      `node -e "require('fs').writeFileSync('${marker.replace(/\\/g, "/")}','1')"`,
+      vscode.ConfigurationTarget.Workspace,
+    );
+    await cfg.update("pollInterval", 300, vscode.ConfigurationTarget.Workspace);
+    await cfg.update("debounceMs", 0, vscode.ConfigurationTarget.Workspace);
+    await cfg.update("toolWait.enabled", true, vscode.ConfigurationTarget.Workspace);
+    await cfg.update("toolWait.thresholdMs", 500, vscode.ConfigurationTarget.Workspace);
+
+    await sleep(500); // let the extension rebuild with the new settings
+
+    const eventsPath = path.join(folder.fsPath, ".claude", "noroshi-events.jsonl");
+    fs.mkdirSync(path.dirname(eventsPath), { recursive: true });
+    fs.appendFileSync(
+      eventsPath,
+      '{"event":"tool_start","session_id":"s1","prompt_id":"p1","tool_name":"Bash"}\n',
+    );
+
+    await waitFor(() => fs.existsSync(marker), 5000);
+    assert.ok(fs.existsSync(marker), "toolWait sound should have played");
+
+    await cfg.update("toolWait.enabled", undefined, vscode.ConfigurationTarget.Workspace);
+    await cfg.update("toolWait.thresholdMs", undefined, vscode.ConfigurationTarget.Workspace);
+  });
+
+  test("a tool_end within the threshold plays nothing", async () => {
+    const folder = vscode.workspace.workspaceFolders![0].uri;
+    const marker = path.join(os.tmpdir(), `noroshi-toolwait-none-${Date.now()}.txt`);
+
+    const cfg = vscode.workspace.getConfiguration("noroshi");
+    await cfg.update(
+      "playerCommand",
+      `node -e "require('fs').writeFileSync('${marker.replace(/\\/g, "/")}','1')"`,
+      vscode.ConfigurationTarget.Workspace,
+    );
+    await cfg.update("pollInterval", 300, vscode.ConfigurationTarget.Workspace);
+    await cfg.update("toolWait.enabled", true, vscode.ConfigurationTarget.Workspace);
+    await cfg.update("toolWait.thresholdMs", 2000, vscode.ConfigurationTarget.Workspace);
+
+    await sleep(500);
+
+    const eventsPath = path.join(folder.fsPath, ".claude", "noroshi-events.jsonl");
+    fs.mkdirSync(path.dirname(eventsPath), { recursive: true });
+    fs.appendFileSync(
+      eventsPath,
+      '{"event":"tool_start","session_id":"s2","prompt_id":"p1","tool_name":"Bash"}\n' +
+        '{"event":"tool_end","session_id":"s2","prompt_id":"p1","tool_name":"Bash"}\n',
+    );
+
+    await sleep(3000); // past the threshold
+    assert.ok(!fs.existsSync(marker), "no sound should have played");
+
+    await cfg.update("toolWait.enabled", undefined, vscode.ConfigurationTarget.Workspace);
+    await cfg.update("toolWait.thresholdMs", undefined, vscode.ConfigurationTarget.Workspace);
+  });
 });
 
 function sleep(ms: number): Promise<void> {

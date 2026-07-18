@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildMenuItems, buildHookSnippet } from "../../menu";
+import { buildMenuItems, buildHookSnippet, type HookInterpreter } from "../../menu";
 
 describe("buildMenuItems", () => {
   it("returns the expected actions in a fixed order", () => {
@@ -57,4 +57,77 @@ describe("buildHookSnippet", () => {
     expect(parsed.hooks.Notification[0].hooks[0].command).toContain('"event":"notification"');
     expect(parsed.hooks.Stop[0].hooks[0].command).toContain("CLAUDE_CODE_ENTRYPOINT");
   });
+
+  it("omits PreToolUse/PostToolUse when no interpreter is given", () => {
+    const parsed = JSON.parse(buildHookSnippet(".claude/noroshi-events.jsonl"));
+    expect(parsed.hooks.PreToolUse).toBeUndefined();
+    expect(parsed.hooks.PostToolUse).toBeUndefined();
+  });
+
+  const interpreters: HookInterpreter[] = ["jq", "python3", "node", "ruby"];
+
+  it.each(interpreters)("adds PreToolUse/PostToolUse command hooks for %s", (interp) => {
+    const parsed = JSON.parse(buildHookSnippet(".claude/noroshi-events.jsonl", interp));
+    expect(parsed.hooks.PreToolUse[0].hooks[0].type).toBe("command");
+    expect(parsed.hooks.PostToolUse[0].hooks[0].type).toBe("command");
+    expect(parsed.hooks.PreToolUse[0].hooks[0].command).toContain(interp);
+    expect(parsed.hooks.PreToolUse[0].hooks[0].command).toContain('"tool_start"');
+    expect(parsed.hooks.PostToolUse[0].hooks[0].command).toContain('"tool_end"');
+  });
+
+  it.each(interpreters)("emits the required fields on tool events for %s", (interp) => {
+    const cmd = JSON.parse(buildHookSnippet(".claude/noroshi-events.jsonl", interp)).hooks
+      .PreToolUse[0].hooks[0].command as string;
+    expect(cmd).toContain("session_id");
+    expect(cmd).toContain("prompt_id");
+    expect(cmd).toContain("tool_name");
+    expect(cmd).toContain("CLAUDE_CODE_ENTRYPOINT");
+    expect(cmd).toContain('>> "$CLAUDE_PROJECT_DIR/.claude/noroshi-events.jsonl"');
+  });
+
+  it.each(interpreters)("switches Stop to the parser and drops tool_name for %s", (interp) => {
+    const cmd = JSON.parse(buildHookSnippet(".claude/noroshi-events.jsonl", interp)).hooks.Stop[0]
+      .hooks[0].command as string;
+    expect(cmd).toContain(interp);
+    expect(cmd).toContain("session_id");
+    expect(cmd).toContain('"stop"');
+    expect(cmd).not.toContain("tool_name");
+  });
+
+  it.each(interpreters)("leaves Notification on printf for %s", (interp) => {
+    const cmd = JSON.parse(buildHookSnippet(".claude/noroshi-events.jsonl", interp)).hooks
+      .Notification[0].hooks[0].command as string;
+    expect(cmd).toContain("printf");
+    expect(cmd).not.toContain("session_id");
+  });
+
+  it("never embeds tool_input", () => {
+    for (const interp of interpreters) {
+      const snippet = buildHookSnippet(".claude/noroshi-events.jsonl", interp);
+      expect(snippet).not.toContain("tool_input");
+    }
+  });
+
+  it("isolates the printf hooks from a failed append", () => {
+    const parsed = JSON.parse(buildHookSnippet(".claude/noroshi-events.jsonl"));
+    for (const event of ["Notification", "PermissionRequest", "Stop"]) {
+      expect(parsed.hooks[event][0].hooks[0].command).toContain("2>/dev/null || true");
+    }
+  });
+
+  it.each(["jq", "python3", "node", "ruby"] as const)(
+    "isolates every hook command from a failed append for %s",
+    (interp) => {
+      const parsed = JSON.parse(buildHookSnippet(".claude/noroshi-events.jsonl", interp));
+      for (const event of [
+        "Notification",
+        "PermissionRequest",
+        "Stop",
+        "PreToolUse",
+        "PostToolUse",
+      ]) {
+        expect(parsed.hooks[event][0].hooks[0].command).toContain("2>/dev/null || true");
+      }
+    },
+  );
 });

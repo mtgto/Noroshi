@@ -5,11 +5,14 @@ export interface NoroshiSettings {
   eventsFile: string;
   soundNotification: string;
   soundStop: string;
+  soundToolWait: string;
   playerCommand: string[];
   pollInterval: number;
   debounceMs: number;
   entrypointFilter: string[];
   suppressWhenFocused: boolean;
+  toolWaitEnabled: boolean;
+  toolWaitThresholdMs: number;
   statusBarShow: boolean;
 }
 

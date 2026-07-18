@@ -13,7 +13,9 @@ import { SpawnCommandRunner } from "./commandRunner";
 import { RealClock } from "./clock";
 import { checkHooksConfigured } from "./setupChecker";
 import { NoroshiStatusBar } from "./statusBar";
-import { buildMenuItems, buildHookSnippet, type MenuActionId } from "./menu";
+import { ToolWaitTracker } from "./toolWaitTracker";
+import { RealTimers } from "./timers";
+import { buildMenuItems, buildHookSnippet, type MenuActionId, type HookInterpreter } from "./menu";
 import type { RawEvent } from "./types";
 
 const SHOW_MENU = "noroshi.showMenu";
@@ -37,8 +39,14 @@ interface MenuState {
   enabled: boolean;
   configured: boolean;
   eventsFile: string;
+  toolWaitEnabled: boolean;
 }
-let menuState: MenuState = { enabled: true, configured: false, eventsFile: "" };
+let menuState: MenuState = {
+  enabled: true,
+  configured: false,
+  eventsFile: "",
+  toolWaitEnabled: false,
+};
 
 export function activate(context: vscode.ExtensionContext): void {
   output = vscode.window.createOutputChannel("Noroshi");
@@ -78,11 +86,14 @@ function readSettings(): NoroshiSettings {
     eventsFile: c.get("eventsFile", ".claude/noroshi-events.jsonl"),
     soundNotification: c.get("sounds.notification", ""),
     soundStop: c.get("sounds.stop", ""),
+    soundToolWait: c.get("sounds.toolWait", ""),
     playerCommand: resolvePlayerCommand(c.get("playerCommand", ""), platform),
     pollInterval: clampNonNegative(c.get("pollInterval", 3000), 3000),
     debounceMs: clampNonNegative(c.get("debounceMs", 250), 250),
     entrypointFilter: c.get("entrypointFilter", []),
     suppressWhenFocused: c.get("suppressWhenFocused", false),
+    toolWaitEnabled: c.get("toolWait.enabled", false),
+    toolWaitThresholdMs: clampNonNegative(c.get("toolWait.thresholdMs", 30000), 30000),
     statusBarShow: c.get("statusBar.show", true),
   };
 }
@@ -91,7 +102,12 @@ async function start(context: vscode.ExtensionContext): Promise<void> {
   const gen = ++generation;
   disposeAll();
   const s = readSettings();
-  menuState = { enabled: s.enabled, configured: false, eventsFile: s.eventsFile };
+  menuState = {
+    enabled: s.enabled,
+    configured: false,
+    eventsFile: s.eventsFile,
+    toolWaitEnabled: s.toolWaitEnabled,
+  };
 
   const statusItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 0);
   const status = new NoroshiStatusBar(statusItem, SHOW_MENU);
@@ -132,6 +148,7 @@ async function start(context: vscode.ExtensionContext): Promise<void> {
   const soundFor: SoundResolver = (kind) => {
     if (kind === "notification") return s.soundNotification || bundled("waiting.wav");
     if (kind === "stop") return s.soundStop || bundled("done.wav");
+    if (kind === "toolWait") return s.soundToolWait || bundled("waiting.wav");
     return null;
   };
 
@@ -147,6 +164,16 @@ async function start(context: vscode.ExtensionContext): Promise<void> {
     log: (m) => output.appendLine(m),
   });
 
+  const tracker = s.toolWaitEnabled
+    ? new ToolWaitTracker({
+        timers: new RealTimers(),
+        thresholdMs: s.toolWaitThresholdMs,
+        onWait: (e) => player.handle(e),
+        log: (m) => output.appendLine(m),
+      })
+    : null;
+  if (tracker) disposer.push({ dispose: () => tracker.dispose() });
+
   // A real drain (not the startup discard) delivering an event proves the hook
   // works, even if it wasn't detected above (e.g. configured in ~/.claude/settings.json).
   const onDrainedEvent = (e: RawEvent) => {
@@ -155,6 +182,14 @@ async function start(context: vscode.ExtensionContext): Promise<void> {
       menuState.configured = true;
       status.update("active", `Watching: ${s.eventsFile}`);
     }
+    // tool_start/tool_end are control events: they drive the tracker's timer and
+    // have no sound. Dropped even when the feature is off, so they don't fill the
+    // log with "skip event without sound mapping".
+    if (e.event === "tool_start" || e.event === "tool_end") {
+      tracker?.handle(e);
+      return;
+    }
+    if (e.event === "stop") tracker?.reset(e.session_id);
     player.handle(e);
   };
 
@@ -210,10 +245,16 @@ async function showMenu(): Promise<void> {
 
 async function runMenuAction(id: MenuActionId): Promise<void> {
   switch (id) {
-    case "copyHookSnippet":
-      await vscode.env.clipboard.writeText(buildHookSnippet(menuState.eventsFile));
+    case "copyHookSnippet": {
+      let interpreter: HookInterpreter | undefined;
+      if (menuState.toolWaitEnabled) {
+        interpreter = await pickInterpreter();
+        if (!interpreter) return; // cancelled
+      }
+      await vscode.env.clipboard.writeText(buildHookSnippet(menuState.eventsFile, interpreter));
       void vscode.window.showInformationMessage("Noroshi: hook snippet copied to clipboard.");
       return;
+    }
     case "openSetupGuide":
       // Opens the extension's Details tab in the editor (renders README.md inline)
       // instead of a browser tab.
@@ -231,6 +272,22 @@ async function runMenuAction(id: MenuActionId): Promise<void> {
       void vscode.commands.executeCommand("workbench.action.openSettings", "@ext:mtgto.noroshi");
       return;
   }
+}
+
+// Ordered by measured startup cost: the parser runs on every tool call and
+// PreToolUse blocks until it exits, so the choice is a real latency trade-off.
+const INTERPRETER_ITEMS: Array<{ label: HookInterpreter; description: string }> = [
+  { label: "jq", description: "~6ms per hook — fastest" },
+  { label: "python3", description: "~22ms per hook" },
+  { label: "node", description: "~30ms per hook" },
+  { label: "ruby", description: "~88ms per hook — slowest" },
+];
+
+async function pickInterpreter(): Promise<HookInterpreter | undefined> {
+  const picked = await vscode.window.showQuickPick(INTERPRETER_ITEMS, {
+    placeHolder: "Which JSON parser is available where Claude Code runs?",
+  });
+  return picked?.label;
 }
 
 /** Update at whichever scope currently overrides noroshi.enabled, defaulting to
