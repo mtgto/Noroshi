@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { buildHookConfig, mergeHooks, pickSettingsTarget } from "../../hookInstaller";
+import {
+  buildHookConfig,
+  installHooksCore,
+  mergeHooks,
+  pickSettingsTarget,
+} from "../../hookInstaller";
+import { FakeFileSystem } from "../fakes";
 
 const EVENTS_FILE = ".claude/noroshi-events.jsonl";
 
@@ -140,5 +146,114 @@ describe("pickSettingsTarget", () => {
     expect(result.kind).toBe("ask");
     if (result.kind !== "ask") throw new Error("expected ask");
     expect(result.choices).toEqual(["local", "shared"]);
+  });
+});
+
+describe("installHooksCore", () => {
+  const dirId = "file:///ws/.claude";
+  const fileIds = {
+    local: "file:///ws/.claude/settings.local.json",
+    shared: "file:///ws/.claude/settings.json",
+  };
+  const noAsk = () => {
+    throw new Error("askTarget should not be called");
+  };
+
+  it("creates settings.json when nothing exists", async () => {
+    const fs = new FakeFileSystem();
+    const outcome = await installHooksCore({
+      fs,
+      dirId,
+      fileIds,
+      eventsFile: EVENTS_FILE,
+      askTarget: noAsk,
+    });
+
+    expect(outcome).toEqual({ kind: "installed", target: "shared", resultKind: "created" });
+    const parsed = JSON.parse(await fs.readFile(fileIds.shared));
+    expect(parsed.hooks.Stop).toHaveLength(1);
+  });
+
+  it("merges into an existing settings.local.json without dropping other hooks", async () => {
+    const fs = new FakeFileSystem({
+      [fileIds.local]: JSON.stringify({
+        permissions: { allow: ["Bash(npm test)"] },
+        hooks: {
+          PreToolUse: [{ matcher: "Bash", hooks: [{ type: "command", command: "echo mine" }] }],
+        },
+      }),
+    });
+    const outcome = await installHooksCore({
+      fs,
+      dirId,
+      fileIds,
+      eventsFile: EVENTS_FILE,
+      askTarget: noAsk,
+    });
+
+    expect(outcome).toEqual({ kind: "installed", target: "local", resultKind: "updated" });
+    const parsed = JSON.parse(await fs.readFile(fileIds.local));
+    expect(parsed.permissions.allow).toEqual(["Bash(npm test)"]);
+    expect(parsed.hooks.PreToolUse[0].hooks[0].command).toBe("echo mine");
+    expect(parsed.hooks.Stop).toHaveLength(1);
+  });
+
+  it("leaves an unparsable settings.local.json untouched", async () => {
+    const fs = new FakeFileSystem({ [fileIds.local]: "{ not json" });
+    const outcome = await installHooksCore({
+      fs,
+      dirId,
+      fileIds,
+      eventsFile: EVENTS_FILE,
+      askTarget: noAsk,
+    });
+
+    expect(outcome).toEqual({ kind: "unparsable", target: "local" });
+    expect(await fs.readFile(fileIds.local)).toBe("{ not json");
+  });
+
+  it("reports unchanged when the hooks are already installed", async () => {
+    const alreadyInstalled = contentOf(mergeHooks(null, EVENTS_FILE));
+    const fs = new FakeFileSystem({ [fileIds.local]: alreadyInstalled });
+    const outcome = await installHooksCore({
+      fs,
+      dirId,
+      fileIds,
+      eventsFile: EVENTS_FILE,
+      askTarget: noAsk,
+    });
+
+    expect(outcome).toEqual({ kind: "unchanged", target: "local" });
+  });
+
+  it("asks when only settings.json exists, and installs into the chosen target", async () => {
+    const fs = new FakeFileSystem({ [fileIds.shared]: "{}" });
+    const outcome = await installHooksCore({
+      fs,
+      dirId,
+      fileIds,
+      eventsFile: EVENTS_FILE,
+      askTarget: async (choices) => {
+        expect(choices).toEqual(["local", "shared"]);
+        return "local";
+      },
+    });
+
+    expect(outcome).toEqual({ kind: "installed", target: "local", resultKind: "created" });
+    expect(await fs.readFile(fileIds.shared)).toBe("{}"); // untouched
+  });
+
+  it("cancels without writing when the user dismisses the picker", async () => {
+    const fs = new FakeFileSystem({ [fileIds.shared]: "{}" });
+    const outcome = await installHooksCore({
+      fs,
+      dirId,
+      fileIds,
+      eventsFile: EVENTS_FILE,
+      askTarget: async () => undefined,
+    });
+
+    expect(outcome).toEqual({ kind: "cancelled" });
+    expect(fs.has(fileIds.local)).toBe(false);
   });
 });

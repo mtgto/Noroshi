@@ -1,4 +1,5 @@
 import { isAbsolutePath } from "./config";
+import type { FileSystem } from "./fileSystem";
 
 export interface HookCommand {
   type: "command";
@@ -105,6 +106,63 @@ export function pickSettingsTarget(hasLocal: boolean, hasShared: boolean): Targe
   if (hasLocal) return { kind: "decided", target: "local" };
   if (!hasShared) return { kind: "decided", target: "shared" };
   return { kind: "ask", choices: ["local", "shared"] };
+}
+
+export const SETTINGS_FILE: Record<SettingsTarget, string> = {
+  local: "settings.local.json",
+  shared: "settings.json",
+};
+
+export interface InstallHooksDeps {
+  fs: FileSystem;
+  /** id (URI string) of the .claude directory, for creating it before the first write. */
+  dirId: string;
+  /** ids (URI strings) of settings.local.json and settings.json. */
+  fileIds: Record<SettingsTarget, string>;
+  eventsFile: string;
+  /** Prompts the user to pick a target when neither file's presence decides it alone. */
+  askTarget: (choices: SettingsTarget[]) => Promise<SettingsTarget | undefined>;
+}
+
+export type InstallOutcome =
+  | { kind: "cancelled" }
+  | { kind: "unparsable"; target: SettingsTarget }
+  | { kind: "unchanged"; target: SettingsTarget }
+  | { kind: "installed"; target: SettingsTarget; resultKind: "created" | "updated" };
+
+/**
+ * Drives the full install: decide which settings file to use, merge the hooks in, and
+ * write it back. Free of vscode so it can run under a plain FileSystem fake — all
+ * user-facing messaging lives in the caller, keyed off the returned outcome.
+ */
+export async function installHooksCore(deps: InstallHooksDeps): Promise<InstallOutcome> {
+  const { fs, dirId, fileIds, eventsFile, askTarget } = deps;
+
+  const [localStat, sharedStat] = await Promise.all([
+    fs.stat(fileIds.local),
+    fs.stat(fileIds.shared),
+  ]);
+  const choice = pickSettingsTarget(localStat !== null, sharedStat !== null);
+  const target = choice.kind === "decided" ? choice.target : await askTarget(choice.choices);
+  if (!target) return { kind: "cancelled" };
+
+  const existing = await readIfPresent(fs, fileIds[target]);
+  const result = mergeHooks(existing, eventsFile);
+
+  if (result.kind === "unparsable") return { kind: "unparsable", target };
+  if (result.kind === "unchanged") return { kind: "unchanged", target };
+
+  await fs.createDirectory(dirId);
+  await fs.writeFile(fileIds[target], result.content);
+  return { kind: "installed", target, resultKind: result.kind };
+}
+
+async function readIfPresent(fs: FileSystem, id: string): Promise<string | null> {
+  try {
+    return await fs.readFile(id);
+  } catch {
+    return null; // absent — mergeHooks creates the file from scratch
+  }
 }
 
 function entry(command: string): HookEntry {
