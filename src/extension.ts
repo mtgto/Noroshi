@@ -13,10 +13,12 @@ import { SpawnCommandRunner } from "./commandRunner";
 import { RealClock } from "./clock";
 import { checkHooksConfigured } from "./setupChecker";
 import { NoroshiStatusBar } from "./statusBar";
-import { buildMenuItems, buildHookSnippet, type MenuActionId } from "./menu";
+import { buildMenuItems, type MenuActionId } from "./menu";
+import { installHooksCore, SETTINGS_FILE, type SettingsTarget } from "./hookInstaller";
 import type { RawEvent } from "./types";
 
 const SHOW_MENU = "noroshi.showMenu";
+const INSTALL_HOOKS = "noroshi.installClaudeCodeHooks";
 const EXTENSION_ID = "mtgto.noroshi";
 
 let disposer: vscode.Disposable[] = [];
@@ -44,13 +46,17 @@ export function activate(context: vscode.ExtensionContext): void {
   output = vscode.window.createOutputChannel("Noroshi");
   context.subscriptions.push(output);
 
-  context.subscriptions.push(vscode.commands.registerCommand(SHOW_MENU, () => void showMenu()));
-
   const rebuild = () => {
     start(context).catch((err) => {
       output.appendLine(`start failed: ${err instanceof Error ? err.message : String(err)}`);
     });
   };
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(SHOW_MENU, () => void showMenu(rebuild)),
+    vscode.commands.registerCommand(INSTALL_HOOKS, () => void installHooks(rebuild)),
+  );
+
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration("noroshi")) rebuild();
@@ -195,7 +201,7 @@ function toUriPath(p: string): string {
   return norm.startsWith("/") ? norm : "/" + norm;
 }
 
-async function showMenu(): Promise<void> {
+async function showMenu(rebuild: () => void): Promise<void> {
   const items = buildMenuItems(menuState.enabled).map((m) => ({
     label: m.label,
     description: m.description,
@@ -205,14 +211,13 @@ async function showMenu(): Promise<void> {
     ? `Noroshi — hook configured, watching ${menuState.eventsFile}`
     : "Noroshi — hook not configured yet";
   const picked = await vscode.window.showQuickPick(items, { placeHolder });
-  if (picked) await runMenuAction(picked.id);
+  if (picked) await runMenuAction(picked.id, rebuild);
 }
 
-async function runMenuAction(id: MenuActionId): Promise<void> {
+async function runMenuAction(id: MenuActionId, rebuild: () => void): Promise<void> {
   switch (id) {
-    case "copyHookSnippet":
-      await vscode.env.clipboard.writeText(buildHookSnippet(menuState.eventsFile));
-      void vscode.window.showInformationMessage("Noroshi: hook snippet copied to clipboard.");
+    case "installHooks":
+      await installHooks(rebuild);
       return;
     case "openSetupGuide":
       // Opens the extension's Details tab in the editor (renders README.md inline)
@@ -231,6 +236,80 @@ async function runMenuAction(id: MenuActionId): Promise<void> {
       void vscode.commands.executeCommand("workbench.action.openSettings", "@ext:mtgto.noroshi");
       return;
   }
+}
+
+/**
+ * Write Noroshi's hooks into this workspace's .claude/settings(.local).json so users
+ * don't have to hand-edit JSON. No confirmation is asked for — running the command is
+ * the intent — but a file we can't parse is left strictly alone.
+ */
+async function installHooks(rebuild: () => void): Promise<void> {
+  const folder = vscode.workspace.workspaceFolders?.[0];
+  if (!folder) {
+    void vscode.window.showWarningMessage("Noroshi: open a folder before installing hooks.");
+    return;
+  }
+  const claudeDir = vscode.Uri.joinPath(folder.uri, ".claude");
+  const uris: Record<SettingsTarget, vscode.Uri> = {
+    local: vscode.Uri.joinPath(claudeDir, SETTINGS_FILE.local),
+    shared: vscode.Uri.joinPath(claudeDir, SETTINGS_FILE.shared),
+  };
+
+  const outcome = await installHooksCore({
+    fs: new VSCodeFileSystem(),
+    dirId: claudeDir.toString(),
+    fileIds: { local: uris.local.toString(), shared: uris.shared.toString() },
+    eventsFile: readSettings().eventsFile,
+    askTarget,
+  });
+
+  switch (outcome.kind) {
+    case "cancelled":
+      return;
+    case "unparsable": {
+      const open = await vscode.window.showWarningMessage(
+        `Noroshi: .claude/${SETTINGS_FILE[outcome.target]} isn't valid JSON, so it was left untouched. ` +
+          "Fix it and run Install Hooks again, or add the hooks by hand.",
+        "Open Setup Guide",
+      );
+      if (open) void vscode.commands.executeCommand("extension.open", EXTENSION_ID);
+      return;
+    }
+    case "unchanged":
+      void vscode.window.showInformationMessage(
+        `Noroshi: hooks are already installed in .claude/${SETTINGS_FILE[outcome.target]}.`,
+      );
+      return;
+    case "installed": {
+      output.appendLine(
+        `installed hooks (${outcome.resultKind}) in .claude/${SETTINGS_FILE[outcome.target]}`,
+      );
+      rebuild(); // re-evaluate the status bar now that the hooks are there
+
+      const open = await vscode.window.showInformationMessage(
+        `Noroshi: hooks installed in .claude/${SETTINGS_FILE[outcome.target]}.`,
+        "Open File",
+      );
+      if (open) void vscode.window.showTextDocument(uris[outcome.target]);
+      return;
+    }
+  }
+}
+
+/** Ask which settings file to write to, preserving the caller's preference order. */
+async function askTarget(choices: SettingsTarget[]): Promise<SettingsTarget | undefined> {
+  const items = choices.map((target) => ({
+    label: `.claude/${SETTINGS_FILE[target]}`,
+    description:
+      target === "local"
+        ? "Personal, usually untracked by git (recommended)"
+        : "Shared with everyone working on this repository",
+    target,
+  }));
+  const picked = await vscode.window.showQuickPick(items, {
+    placeHolder: "Noroshi — where should the hooks be installed?",
+  });
+  return picked?.target;
 }
 
 /** Update at whichever scope currently overrides noroshi.enabled, defaulting to
