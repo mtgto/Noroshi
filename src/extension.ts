@@ -105,13 +105,16 @@ async function start(context: vscode.ExtensionContext): Promise<void> {
   status.setVisible(s.statusBarShow);
 
   if (!s.enabled) {
-    status.update("disabled", "Noroshi is disabled (noroshi.enabled). Click for options.");
+    status.update(
+      "disabled",
+      vscode.l10n.t("Noroshi is disabled (noroshi.enabled). Click for options."),
+    );
     return;
   }
 
   const folder = vscode.workspace.workspaceFolders?.[0];
   if (!folder) {
-    status.update("unconfigured", "No folder is open");
+    status.update("unconfigured", vscode.l10n.t("No folder is open"));
     return;
   }
 
@@ -130,7 +133,9 @@ async function start(context: vscode.ExtensionContext): Promise<void> {
   menuState.configured = configured;
   status.update(
     configured ? "active" : "unconfigured",
-    configured ? `Watching: ${s.eventsFile}` : "Hook not configured. Click for setup options.",
+    configured
+      ? vscode.l10n.t("Watching: {0}", s.eventsFile)
+      : vscode.l10n.t("Hook not configured. Click for setup options."),
   );
 
   const bundled = (name: string) =>
@@ -159,7 +164,7 @@ async function start(context: vscode.ExtensionContext): Promise<void> {
     if (gen === generation && !menuState.configured) {
       confirmedEventsFile = s.eventsFile;
       menuState.configured = true;
-      status.update("active", `Watching: ${s.eventsFile}`);
+      status.update("active", vscode.l10n.t("Watching: {0}", s.eventsFile));
     }
     player.handle(e);
   };
@@ -203,13 +208,13 @@ function toUriPath(p: string): string {
 
 async function showMenu(rebuild: () => void): Promise<void> {
   const items = buildMenuItems(menuState.enabled).map((m) => ({
-    label: m.label,
-    description: m.description,
+    label: vscode.l10n.t(m.label),
+    description: vscode.l10n.t(m.description),
     id: m.id,
   }));
   const placeHolder = menuState.configured
-    ? `Noroshi — hook configured, watching ${menuState.eventsFile}`
-    : "Noroshi — hook not configured yet";
+    ? vscode.l10n.t("Noroshi — hook configured, watching {0}", menuState.eventsFile)
+    : vscode.l10n.t("Noroshi — hook not configured yet");
   const picked = await vscode.window.showQuickPick(items, { placeHolder });
   if (picked) await runMenuAction(picked.id, rebuild);
 }
@@ -246,7 +251,9 @@ async function runMenuAction(id: MenuActionId, rebuild: () => void): Promise<voi
 async function installHooks(rebuild: () => void): Promise<void> {
   const folder = vscode.workspace.workspaceFolders?.[0];
   if (!folder) {
-    void vscode.window.showWarningMessage("Noroshi: open a folder before installing hooks.");
+    void vscode.window.showWarningMessage(
+      vscode.l10n.t("Noroshi: open a folder before installing hooks."),
+    );
     return;
   }
   const claudeDir = vscode.Uri.joinPath(folder.uri, ".claude");
@@ -268,16 +275,21 @@ async function installHooks(rebuild: () => void): Promise<void> {
       return;
     case "unparsable": {
       const open = await vscode.window.showWarningMessage(
-        `Noroshi: .claude/${SETTINGS_FILE[outcome.target]} isn't valid JSON, so it was left untouched. ` +
-          "Fix it and run Install Hooks again, or add the hooks by hand.",
-        "Open Setup Guide",
+        vscode.l10n.t(
+          "Noroshi: .claude/{0} isn't valid JSON, so it was left untouched. Fix it and run Install Hooks again, or add the hooks by hand.",
+          SETTINGS_FILE[outcome.target],
+        ),
+        vscode.l10n.t("Open Setup Guide"),
       );
       if (open) void vscode.commands.executeCommand("extension.open", EXTENSION_ID);
       return;
     }
     case "unchanged":
       void vscode.window.showInformationMessage(
-        `Noroshi: hooks are already installed in .claude/${SETTINGS_FILE[outcome.target]}.`,
+        vscode.l10n.t(
+          "Noroshi: hooks are already installed in .claude/{0}.",
+          SETTINGS_FILE[outcome.target],
+        ),
       );
       return;
     case "installed": {
@@ -287,8 +299,8 @@ async function installHooks(rebuild: () => void): Promise<void> {
       rebuild(); // re-evaluate the status bar now that the hooks are there
 
       const open = await vscode.window.showInformationMessage(
-        `Noroshi: hooks installed in .claude/${SETTINGS_FILE[outcome.target]}.`,
-        "Open File",
+        vscode.l10n.t("Noroshi: hooks installed in .claude/{0}.", SETTINGS_FILE[outcome.target]),
+        vscode.l10n.t("Open File"),
       );
       if (open) void vscode.window.showTextDocument(uris[outcome.target]);
       return;
@@ -302,12 +314,12 @@ async function askTarget(choices: SettingsTarget[]): Promise<SettingsTarget | un
     label: `.claude/${SETTINGS_FILE[target]}`,
     description:
       target === "local"
-        ? "Personal, usually untracked by git (recommended)"
-        : "Shared with everyone working on this repository",
+        ? vscode.l10n.t("Personal, usually untracked by git (recommended)")
+        : vscode.l10n.t("Shared with everyone working on this repository"),
     target,
   }));
   const picked = await vscode.window.showQuickPick(items, {
-    placeHolder: "Noroshi — where should the hooks be installed?",
+    placeHolder: vscode.l10n.t("Noroshi — where should the hooks be installed?"),
   });
   return picked?.target;
 }
