@@ -2,7 +2,7 @@
   "name": "noroshi",
   "displayName": "Noroshi",
   "description": "Play a sound when Claude Code is waiting for you or finishes, even in Remote Containers.",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "publisher": "mtgto",
   "license": "MIT",
   "repository": {
@@ -128,6 +128,8 @@
     "format": "oxfmt src",
     "format:check": "oxfmt --check src",
     "vscode:prepublish": "npm run compile",
+    "package": "vsce package",
+    "publish": "vsce publish",
     "prepare": "lefthook install"
   },
   "devDependencies": {
@@ -136,6 +138,7 @@
     "@types/vscode": "1.98.0",
     "@vscode/test-cli": "^0.0.10",
     "@vscode/test-electron": "^2.4.1",
+    "@vscode/vsce": "^3.9.2",
     "lefthook": "^2.1.10",
     "oxfmt": "^0.58.0",
     "oxlint": "^1.73.0",
