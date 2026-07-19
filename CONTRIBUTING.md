@@ -30,8 +30,8 @@ normally does not exist at rest — that is expected. Logs are in the Output pan
 ## Build and install a VSIX
 
 ```sh
-npx @vscode/vsce package        # produces noroshi-0.0.1.vsix (warnings are OK)
-code --install-extension noroshi-0.0.1.vsix
+npx @vscode/vsce package        # produces noroshi-vX.Y.Z.vsix (warnings are OK)
+code --install-extension noroshi-vX.Y.Z.vsix
 ```
 
 Or use the Extensions panel → `…` → **Install from VSIX**. Because Noroshi is a

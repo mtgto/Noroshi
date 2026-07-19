@@ -51,12 +51,10 @@ a sound the moment a new line appears.
 
 ### 1. Install Noroshi
 
-Install **Noroshi** from the VSCode Marketplace: open the Extensions panel
-(`⌘⇧X` on macOS, `Ctrl+Shift+X` on Windows/Linux), search for **Noroshi**, and
-click **Install** — or install `mtgto.noroshi` directly.
-
-> **Coming soon:** Noroshi is not on the Marketplace just yet. In the meantime you
-> can install the packaged `.vsix` — see [CONTRIBUTING.md](CONTRIBUTING.md#build-and-install-a-vsix).
+Install **Noroshi** from the [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=mtgto.noroshi):
+open the Extensions panel (`⌘⇧X` on macOS, `Ctrl+Shift+X` on Windows/Linux),
+search for **Noroshi**, and click **Install** — or install `mtgto.noroshi`
+directly.
 
 Because Noroshi is a `["ui"]` extension, it installs on your **local (UI)** side,
 which is exactly what the Remote Container use case needs.

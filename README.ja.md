@@ -39,9 +39,7 @@ Noroshi は `extensionKind: ["ui"]` として**手元のマシンで動く**た�
 
 ### 1. Noroshi をインストールする
 
-VSCode Marketplace から **Noroshi** をインストールします。拡張パネル（macOS: `⌘⇧X` / Windows・Linux: `Ctrl+Shift+X`）を開いて **Noroshi** を検索し、**インストール** をクリック。`mtgto.noroshi` を直接指定してもかまいません。
-
-> **近日公開:** Noroshi はまだ Marketplace には出ていません。それまでは、パッケージ済みの `.vsix` からインストールできます（[CONTRIBUTING.ja.md](CONTRIBUTING.ja.md#vsix-のビルドとインストール) を参照）。
+[VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=mtgto.noroshi) から **Noroshi** をインストールします。拡張パネル（macOS: `⌘⇧X` / Windows・Linux: `Ctrl+Shift+X`）を開いて **Noroshi** を検索し、**インストール** をクリック。`mtgto.noroshi` を直接指定してもかまいません。
 
 Noroshi は `["ui"]` 拡張なので、**手元（UI）側**にインストールされます。これが Remote Container 用途で狙いどおりの動きです。
 

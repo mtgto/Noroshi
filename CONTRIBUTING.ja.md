@@ -24,8 +24,8 @@ echo '{"event":"notification"}' >> .claude/noroshi-events.jsonl # 待機音
 ## VSIX のビルドとインストール
 
 ```sh
-npx @vscode/vsce package        # noroshi-0.0.1.vsix を生成（警告は無視でOK）
-code --install-extension noroshi-0.0.1.vsix
+npx @vscode/vsce package        # noroshi-vX.Y.Z.vsix を生成（警告は無視でOK）
+code --install-extension noroshi-vX.Y.Z.vsix
 ```
 
 または拡張パネル → `…` → **Install from VSIX**。Noroshi は `["ui"]` 拡張なのでローカル（UI）側に入る（Remote Container 用途で狙いどおり）。
