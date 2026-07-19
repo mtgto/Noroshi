@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   buildHookConfig,
   installHooksCore,
+  type InstallHooksDeps,
   mergeHooks,
   pickSettingsTarget,
 } from "../../hookInstaller";
@@ -155,7 +156,7 @@ describe("installHooksCore", () => {
     local: "file:///ws/.claude/settings.local.json",
     shared: "file:///ws/.claude/settings.json",
   };
-  const noAsk = () => {
+  const noAsk: InstallHooksDeps["askTarget"] = () => {
     throw new Error("askTarget should not be called");
   };
   const install = (fs: FakeFileSystem, askTarget = noAsk) =>

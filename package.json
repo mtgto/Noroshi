@@ -123,7 +123,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:integration": "vscode-test",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
     "lint": "oxlint src",
     "format": "oxfmt src",
     "format:check": "oxfmt --check src",
