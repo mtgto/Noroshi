@@ -122,16 +122,6 @@ VSCode の**コマンドパレット**（macOS: `⌘⇧P` / Windows・Linux: `Ct
         ]
       }
     ],
-    "PermissionRequest": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "printf '{\"event\":\"notification\",\"entrypoint\":\"%s\"}\\n' \"${CLAUDE_CODE_ENTRYPOINT:-unknown}\" >> \"$CLAUDE_PROJECT_DIR/.claude/noroshi-events.jsonl\"  # noroshi"
-          }
-        ]
-      }
-    ],
     "Stop": [
       {
         "hooks": [
@@ -150,8 +140,9 @@ VSCode の**コマンドパレット**（macOS: `⌘⇧P` / Windows・Linux: `Ct
 
 ### 既知の制約
 
-- **Claude Code 2.1.207 時点では、Claude Code の VSCode 拡張版で `Notification` フックが発火しません**（将来のバージョンで直る可能性があります）。これは拡張の `processControlRequest()` が `Notification` / `PermissionRequest` の control-request サブタイプに対応するハンドラを持たなかったために起きていた既知の上流バグに由来します（根本原因の解析は [anthropics/claude-code#8985 のコメント](https://github.com/anthropics/claude-code/issues/8985#issuecomment-3798023834)、最初の報告は [#16114](https://github.com/anthropics/claude-code/issues/16114) を参照）。一方 `PermissionRequest` は**その後修正されており**、Write/Edit/Bash 系のツール実行許可ダイアログでも `AskUserQuestion` の選択ダイアログでも、拡張上（同じく 2.1.207 で確認）で発火することを実機検証済みです。現状 Noroshi が拡張で音を鳴らせているのは、この `PermissionRequest` のおかげです。`Notification` も無害なのでスニペットには残しており、`idle_prompt` などターミナル CLI 側のユースケースはこちらでしか拾えません。
-- **サンドボックスの「ネットワーク接続を許可しますか?」ダイアログ**（`curl` 実行時などに出るもの）は、表示時にも選択後にも、どちらのフックも発火しません。これは別の未対応コードパスらしく、現状 Noroshi 側で拾う手段がありません。
+- **VSCode 拡張版では、`Notification` フックに Claude Code 2.1.233 以降が必要です。** それ以前は拡張版でこのフックが発火しませんでした（[anthropics/claude-code#8985](https://github.com/anthropics/claude-code/issues/8985)、最初の報告は [#16114](https://github.com/anthropics/claude-code/issues/16114)）。2.1.233 で許可プロンプトについて修正されています。2.1.266 の拡張版で、ツール実行の許可ダイアログ（Write）、`AskUserQuestion` の選択ダイアログ、サンドボックスの「ネットワーク接続を許可しますか?」ダイアログのいずれでも発火することを実機検証済みです。Claude Code を上げられない場合は、`PermissionRequest` も併用して拡張版に対応していた Noroshi **v0.1.0** を使ってください。
+- **拡張版では、放置しても音が鳴りません。** 「Claude is waiting for your input」の `idle_prompt` 通知はターミナル CLI では飛びますが、拡張版では 2.1.266 でも飛ばず、Noroshi に届くものがありません。許可プロンプトと `Stop` は影響を受けません。
+- **v0.1.0 から更新すると `PermissionRequest` のエントリが残ります。** v0.1.0 はこれをインストールしており、Noroshi はフックのエントリを削除しないため（上記の注記を参照）そのまま残り、許可プロンプトのたびに約6秒後にもう一度音が鳴ります。`debounceMs` では到底吸収できない間隔です。`.claude/settings.json` や `.claude/settings.local.json` から手で削除してください。
 
 ## 開発に参加する
 

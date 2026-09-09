@@ -165,16 +165,6 @@ you change `noroshi.eventsFile`, update the append target to match):
         ]
       }
     ],
-    "PermissionRequest": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "printf '{\"event\":\"notification\",\"entrypoint\":\"%s\"}\\n' \"${CLAUDE_CODE_ENTRYPOINT:-unknown}\" >> \"$CLAUDE_PROJECT_DIR/.claude/noroshi-events.jsonl\"  # noroshi"
-          }
-        ]
-      }
-    ],
     "Stop": [
       {
         "hooks": [
@@ -196,23 +186,24 @@ you want to tidy up; a stale entry only appends to a file nobody watches.
 
 ### Known limitations
 
-- **As of Claude Code 2.1.207, the `Notification` hook does not fire in the
-  Claude Code VSCode extension** — a later version may fix it. This stems from a
-  known upstream bug where the extension's `processControlRequest()` had no
-  handler for the `Notification` / `PermissionRequest` control-request subtypes
-  (see [anthropics/claude-code#8985 (comment)](https://github.com/anthropics/claude-code/issues/8985#issuecomment-3798023834)
-  for the root-cause analysis, and [#16114](https://github.com/anthropics/claude-code/issues/16114)
-  for the original report). `PermissionRequest` **has since been fixed** and was
-  confirmed working in the extension (also on 2.1.207) for both the
-  tool-permission dialog (Write/Edit/Bash) and the `AskUserQuestion` dialog —
-  this is the one that actually gets Noroshi its sound in the extension today.
-  `Notification` is kept in the snippet anyway since it's harmless and still
-  covers terminal CLI cases (like `idle_prompt`) that `PermissionRequest`
-  doesn't.
-- **The sandbox's "Allow network connection to this host?" dialog** (shown e.g.
-  for `curl`) does not fire either hook, on appearance or after a choice is made
-  — it appears to go through a separate, still-unhooked code path. There's
-  currently no way for Noroshi to catch that one.
+- **In the VSCode extension, the `Notification` hook needs Claude Code 2.1.233 or
+  newer.** Before that it never fired there
+  ([anthropics/claude-code#8985](https://github.com/anthropics/claude-code/issues/8985),
+  originally reported as [#16114](https://github.com/anthropics/claude-code/issues/16114));
+  2.1.233 fixed it for permission prompts. Verified on 2.1.266 in the extension
+  for the tool-permission dialog (Write), the `AskUserQuestion` dialog, and the
+  sandbox's "Allow network connection to this host?" dialog. On an older Claude
+  Code you cannot upgrade, use Noroshi **v0.1.0**, which also hooked
+  `PermissionRequest` to reach the extension.
+- **Leaving the extension idle plays no sound.** The `idle_prompt` notification
+  ("Claude is waiting for your input") fires in the terminal CLI but not in the
+  extension, still true on 2.1.266 — nothing reaches Noroshi to play. Permission
+  prompts and `Stop` are unaffected.
+- **Upgrading from v0.1.0 leaves a `PermissionRequest` entry behind.** v0.1.0
+  installed one, and Noroshi never deletes hook entries (see the note above), so
+  it survives and plays a second sound about six seconds after each permission
+  prompt — `debounceMs` is far too short to absorb that. Delete that entry from
+  `.claude/settings.json` / `.claude/settings.local.json` by hand.
 
 ## Contributing
 

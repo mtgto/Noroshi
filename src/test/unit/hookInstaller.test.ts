@@ -11,7 +11,7 @@ import { FakeFileSystem } from "../fakes";
 const EVENTS_FILE = ".claude/noroshi-events.jsonl";
 
 /** The command mergeHooks must consider "already present" for the given event kind. */
-function commandFor(kind: "Notification" | "PermissionRequest" | "Stop", eventsFile: string) {
+function commandFor(kind: "Notification" | "Stop", eventsFile: string) {
   return buildHookConfig(eventsFile)[kind][0].hooks[0].command;
 }
 
@@ -23,15 +23,10 @@ function contentOf(result: ReturnType<typeof mergeHooks>): string {
 }
 
 describe("buildHookConfig", () => {
-  it("covers Notification, PermissionRequest, and Stop with command hooks", () => {
+  it("covers Notification and Stop with command hooks", () => {
     const cfg = buildHookConfig(EVENTS_FILE);
     expect(cfg.Notification[0].hooks[0].type).toBe("command");
-    expect(cfg.PermissionRequest[0].hooks[0].type).toBe("command");
     expect(cfg.Stop[0].hooks[0].type).toBe("command");
-  });
-
-  it("sends PermissionRequest through the same notification event kind as Notification", () => {
-    expect(commandFor("PermissionRequest", EVENTS_FILE)).toContain('"event":"notification"');
   });
 
   it("targets a $CLAUDE_PROJECT_DIR-relative path for a relative eventsFile", () => {
@@ -58,8 +53,8 @@ describe("mergeHooks", () => {
     const result = mergeHooks(null, EVENTS_FILE);
     expect(result.kind).toBe("created");
     const parsed = JSON.parse(contentOf(result));
+    expect(Object.keys(parsed.hooks).sort()).toEqual(["Notification", "Stop"]);
     expect(parsed.hooks.Notification[0].hooks[0].type).toBe("command");
-    expect(parsed.hooks.PermissionRequest).toHaveLength(1);
     expect(parsed.hooks.Stop).toHaveLength(1);
   });
 
@@ -67,11 +62,23 @@ describe("mergeHooks", () => {
     expect(contentOf(mergeHooks(null, EVENTS_FILE))).toContain(EVENTS_FILE);
   });
 
-  it("adds all three events to an empty settings object", () => {
+  it("adds both events to an empty settings object", () => {
     const result = mergeHooks("{}", EVENTS_FILE);
     expect(result.kind).toBe("updated");
     const parsed = JSON.parse(contentOf(result));
-    expect(Object.keys(parsed.hooks).sort()).toEqual(["Notification", "PermissionRequest", "Stop"]);
+    expect(Object.keys(parsed.hooks).sort()).toEqual(["Notification", "Stop"]);
+  });
+
+  // A PermissionRequest entry from an older Noroshi is the user's file now: leaving
+  // it is a stale duplicate sound, but deleting entries we cannot prove are ours is
+  // the worse failure, so it stays and the README says how to remove it.
+  it("leaves a PermissionRequest entry from an older install in place", () => {
+    const stale = "printf noroshi-old >> events  # noroshi";
+    const existing = JSON.stringify({
+      hooks: { PermissionRequest: [{ hooks: [{ type: "command", command: stale }] }] },
+    });
+    const parsed = JSON.parse(contentOf(mergeHooks(existing, EVENTS_FILE)));
+    expect(parsed.hooks.PermissionRequest[0].hooks[0].command).toBe(stale);
   });
 
   it("keeps unrelated hook events untouched", () => {

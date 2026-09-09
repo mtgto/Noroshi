@@ -12,12 +12,12 @@ export interface HookEntry {
   hooks: HookCommand[];
 }
 
-/** The three Claude Code events Noroshi hooks into, each mapped to its entries. */
+/** The two Claude Code events Noroshi hooks into, each mapped to its entries. */
 export type HooksConfig = Record<HookEvent, HookEntry[]>;
 
-export type HookEvent = "Notification" | "PermissionRequest" | "Stop";
+export type HookEvent = "Notification" | "Stop";
 
-const HOOK_EVENTS: HookEvent[] = ["Notification", "PermissionRequest", "Stop"];
+const HOOK_EVENTS: HookEvent[] = ["Notification", "Stop"];
 
 export type MergeResult =
   | { kind: "created"; content: string }
@@ -40,12 +40,6 @@ export function buildHookConfig(eventsFile: string): HooksConfig {
   const target = isAbsolutePath(eventsFile) ? eventsFile : `$CLAUDE_PROJECT_DIR/${eventsFile}`;
   return {
     Notification: [entry(hookCommand("notification", target))],
-    // Fires in both the terminal CLI and the VSCode extension (verified on
-    // 2.1.207 for both the tool-permission dialog and the AskUserQuestion
-    // elicitation dialog) — this is what actually gets Noroshi its sound in
-    // the extension, where Notification alone does not fire
-    // (github.com/anthropics/claude-code/issues/8985#issuecomment-3798023834).
-    PermissionRequest: [entry(hookCommand("notification", target))],
     Stop: [entry(hookCommand("stop", target))],
   };
 }
