@@ -43,6 +43,7 @@ for the Remote Container use case.
 ```sh
 npm test              # unit tests (vitest)
 npm run compile       # tsc build (out/)
+npm run clean         # remove out/ (packaging and publishing do this for you)
 npm run lint          # oxlint
 npm run format        # oxfmt
 npm run test:integration  # integration test (launches a real VSCode; CI needs xvfb-run)

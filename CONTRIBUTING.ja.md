@@ -35,6 +35,7 @@ code --install-extension noroshi-X.Y.Z.vsix
 ```sh
 npm test              # 単体テスト（vitest）
 npm run compile       # tsc ビルド（out/）
+npm run clean         # out/ を削除（package / publish 時は自動で走る）
 npm run lint          # oxlint
 npm run format        # oxfmt
 npm run test:integration  # 統合テスト（実 VSCode を起動。CI では xvfb-run が必要）
