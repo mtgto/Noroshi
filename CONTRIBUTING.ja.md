@@ -24,8 +24,8 @@ echo '{"event":"notification"}' >> .claude/noroshi-events.jsonl # 待機音
 ## VSIX のビルドとインストール
 
 ```sh
-npx @vscode/vsce package        # noroshi-vX.Y.Z.vsix を生成（警告は無視でOK）
-code --install-extension noroshi-vX.Y.Z.vsix
+npx @vscode/vsce package        # noroshi-X.Y.Z.vsix を生成（警告は無視でOK）
+code --install-extension noroshi-X.Y.Z.vsix
 ```
 
 または拡張パネル → `…` → **Install from VSIX**。Noroshi は `["ui"]` 拡張なのでローカル（UI）側に入る（Remote Container 用途で狙いどおり）。
@@ -71,3 +71,51 @@ Noroshi は `noroshi.entrypointFilter` で特定のセッション種別だけ�
 2. フックを設定する（README を参照）。
 3. Claude Code に何か応答させ、`Stop` で完了音が手元で鳴ることを確認する。
 4. `createFileSystemWatcher` が効かない環境でも、`pollInterval` 経過後に鳴ればポーリングの安全網が機能している。
+
+## リリース手順
+
+リリースは手動。
+
+1. 出したいものが揃った `main` から始める。作業ツリーはクリーンで、CI はグリーンであること。
+
+2. CHANGELOG を締める。`## [Unreleased]` の見出しを `## [X.Y.Z] - YYYY-MM-DD` に変え、ファイル末尾に対応するリンクを追加する:
+
+   ```
+   [X.Y.Z]: https://github.com/mtgto/noroshi/releases/tag/vX.Y.Z
+   ```
+
+3. バージョンを上げる:
+
+   ```sh
+   npm version X.Y.Z --no-git-tag-version
+   ```
+
+4. コミット・タグ・push:
+
+   ```sh
+   git commit -am "chore: release vX.Y.Z"
+   git tag vX.Y.Z
+   git push origin main --follow-tags
+   ```
+
+5. VSIX をビルドする:
+
+   ```sh
+   npm run package        # noroshi-X.Y.Z.vsix を生成
+   ```
+
+   前回のリリースから `.vscodeignore` を変えた場合は、`npx @vscode/vsce ls` で実際に何が入ったかを確認する。
+
+6. Marketplace に公開する:
+
+   ```sh
+   npm run publish
+   ```
+
+   Marketplace の **Manage** スコープを持つ Azure DevOps の personal access token が必要。`npx @vscode/vsce login mtgto` で一度登録しておくか、`VSCE_PAT` 環境変数でその場だけ渡す。
+
+7. GitHub リリースを作る。VSIX を添付し、2 で書いた CHANGELOG の該当セクションをリリースノートにする:
+
+   ```sh
+   gh release create vX.Y.Z --title vX.Y.Z --notes-file <notes.md> noroshi-X.Y.Z.vsix
+   ```

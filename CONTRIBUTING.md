@@ -30,8 +30,8 @@ normally does not exist at rest — that is expected. Logs are in the Output pan
 ## Build and install a VSIX
 
 ```sh
-npx @vscode/vsce package        # produces noroshi-vX.Y.Z.vsix (warnings are OK)
-code --install-extension noroshi-vX.Y.Z.vsix
+npx @vscode/vsce package        # produces noroshi-X.Y.Z.vsix (warnings are OK)
+code --install-extension noroshi-X.Y.Z.vsix
 ```
 
 Or use the Extensions panel → `…` → **Install from VSIX**. Because Noroshi is a
@@ -86,3 +86,57 @@ Set the discovered value into `noroshi.entrypointFilter` (e.g. `["claude-vscode"
    your local machine.
 4. Even where `createFileSystemWatcher` does not fire, a sound after `pollInterval`
    confirms the polling safety net is working.
+
+## Releasing
+
+Releasing is manual.
+
+1. Start from a clean `main` that already has everything you want to ship, with CI
+   green.
+
+2. Close out the CHANGELOG. Rename the `## [Unreleased]` heading to
+   `## [X.Y.Z] - YYYY-MM-DD` and add the matching link at the bottom of the file:
+
+   ```
+   [X.Y.Z]: https://github.com/mtgto/noroshi/releases/tag/vX.Y.Z
+   ```
+
+3. Bump the version:
+
+   ```sh
+   npm version X.Y.Z --no-git-tag-version
+   ```
+
+4. Commit, tag, and push:
+
+   ```sh
+   git commit -am "chore: release vX.Y.Z"
+   git tag vX.Y.Z
+   git push origin main --follow-tags
+   ```
+
+5. Build the VSIX:
+
+   ```sh
+   npm run package        # produces noroshi-X.Y.Z.vsix
+   ```
+
+   If `.vscodeignore` changed since the last release, confirm what actually went in
+   with `npx @vscode/vsce ls`.
+
+6. Publish to the Marketplace:
+
+   ```sh
+   npm run publish
+   ```
+
+   This needs an Azure DevOps personal access token with the Marketplace **Manage**
+   scope. Either register it once with `npx @vscode/vsce login mtgto`, or pass it
+   for the single command via the `VSCE_PAT` environment variable.
+
+7. Create the GitHub release, attaching the VSIX and using the CHANGELOG section
+   you just wrote as the notes:
+
+   ```sh
+   gh release create vX.Y.Z --title vX.Y.Z --notes-file <notes.md> noroshi-X.Y.Z.vsix
+   ```
