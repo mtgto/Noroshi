@@ -188,8 +188,7 @@ you want to tidy up; a stale entry only appends to a file nobody watches.
 
 - **In the VSCode extension, the `Notification` hook needs Claude Code 2.1.233 or
   newer.** Before that it never fired there
-  ([anthropics/claude-code#8985](https://github.com/anthropics/claude-code/issues/8985),
-  originally reported as [#16114](https://github.com/anthropics/claude-code/issues/16114));
+  ([anthropics/claude-code#8985](https://github.com/anthropics/claude-code/issues/8985));
   2.1.233 fixed it for permission prompts. Verified on 2.1.266 in the extension
   for the tool-permission dialog (Write), the `AskUserQuestion` dialog, and the
   sandbox's "Allow network connection to this host?" dialog. On an older Claude
