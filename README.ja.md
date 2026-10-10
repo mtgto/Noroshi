@@ -105,6 +105,39 @@ VSCode の**コマンドパレット**（macOS: `⌘⇧P` / Windows・Linux: `Ct
 
 この値が合わなくなった場合は、判別子を自分で実測できます（[CONTRIBUTING.ja.md](CONTRIBUTING.ja.md#entrypoint-の判別子を実測する) を参照）。
 
+### 音の代わりにデスクトップ通知を出す
+
+`playerCommand` には音声プレイヤーに限らず任意のコマンドを指定できます。Noroshi は次の環境変数を渡します。
+
+| 変数 | 値 |
+|---|---|
+| `NOROSHI_EVENT` | `notification`（入力待ち）または `stop`（完了） |
+| `NOROSHI_WORKSPACE_NAME` | VSCode のタイトルバーに表示されるワークスペース名 |
+| `NOROSHI_WORKSPACE_URI` | ワークスペースフォルダの URI（Dev Container なら `vscode-remote://dev-container+…/workspaces/app` など） |
+
+`playerCommand` はシェルを経由しないので、処理はスクリプトに書きます。次の例は macOS で [terminal-notifier](https://github.com/julienXX/terminal-notifier) を使って通知センターにバナーを出します。バナーをクリックすると、Dev Container や Kubernetes Pod のウィンドウであっても、そのワークスペースの VSCode ウィンドウが前面に出ます。
+
+```sh
+#!/bin/sh
+# Save as e.g. ~/.config/noroshi/notify.sh
+case "$NOROSHI_EVENT" in
+  notification) msg="Waiting for your input" ;;
+  *)            msg="Finished" ;;
+esac
+terminal-notifier -title "Claude Code" -subtitle "$NOROSHI_WORKSPACE_NAME" \
+  -message "$msg" -sound Glass -group "noroshi-$NOROSHI_WORKSPACE_URI" \
+  -execute "/usr/local/bin/code --folder-uri '$NOROSHI_WORKSPACE_URI'"
+```
+
+```json
+"noroshi.playerCommand": "/bin/sh /Users/you/.config/noroshi/notify.sh"
+```
+
+- パスは絶対パスで書いてください。シェルを経由しないので `playerCommand` 内の `~` は展開されず、`-execute` のコマンドにも `PATH` が通っているとは限りません。`code` コマンドの場所は `which code` で確認できます。
+- `-group` を付けると、同じワークスペースの通知が溜まらず置き換わります。
+- マルチルートワークスペースでは `NOROSHI_WORKSPACE_URI` が 1 つ目のフォルダになるため、クリックするとウィンドウが前面に出る代わりに、そのフォルダが新しいウィンドウで開くことがあります。
+- Linux では `notify-send` で同様にバナーを出せます。
+
 ### フックを手で書く
 
 上記の **Install Claude Code Hooks** を使ったなら不要で、自分で設定したい場合のためのものです。`.claude/settings.json` に以下を追加します（`noroshi.eventsFile` を変えた場合は追記先パスも合わせてください）。

@@ -146,6 +146,48 @@ integrated terminal, set the extension's entrypoint value into
 If that value ever stops matching, you can measure the discriminator yourself —
 see [CONTRIBUTING.md](CONTRIBUTING.md#measuring-the-entrypoint-discriminator).
 
+### Show a desktop notification instead of a sound
+
+`playerCommand` can run any command, not just an audio player. Noroshi passes
+these environment variables to it:
+
+| Variable | Value |
+|---|---|
+| `NOROSHI_EVENT` | `notification` (waiting for you) or `stop` (finished) |
+| `NOROSHI_WORKSPACE_NAME` | The workspace name shown in the VSCode title bar |
+| `NOROSHI_WORKSPACE_URI` | The URI of the workspace folder, e.g. `vscode-remote://dev-container+…/workspaces/app` for a Dev Container |
+
+Since `playerCommand` runs without a shell, put the logic in a script. This
+example for macOS shows a Notification Center banner with
+[terminal-notifier](https://github.com/julienXX/terminal-notifier); clicking it
+brings the VSCode window of that workspace to the front — even a Dev Container
+or Kubernetes Pod window.
+
+```sh
+#!/bin/sh
+# Save as e.g. ~/.config/noroshi/notify.sh
+case "$NOROSHI_EVENT" in
+  notification) msg="Waiting for your input" ;;
+  *)            msg="Finished" ;;
+esac
+terminal-notifier -title "Claude Code" -subtitle "$NOROSHI_WORKSPACE_NAME" \
+  -message "$msg" -sound Glass -group "noroshi-$NOROSHI_WORKSPACE_URI" \
+  -execute "/usr/local/bin/code --folder-uri '$NOROSHI_WORKSPACE_URI'"
+```
+
+```json
+"noroshi.playerCommand": "/bin/sh /Users/you/.config/noroshi/notify.sh"
+```
+
+- Use absolute paths: without a shell, `~` is not expanded in `playerCommand`,
+  and the `-execute` command may not see your `PATH`. Run `which code` to find
+  where your `code` command is.
+- `-group` replaces the previous banner of the same workspace instead of piling
+  them up.
+- In a multi-root workspace, `NOROSHI_WORKSPACE_URI` is the first folder, so
+  clicking may open that folder in a new window instead of focusing yours.
+- On Linux, `notify-send` works the same way for the banner itself.
+
 ### Configuring the hook by hand
 
 You don't need this if you used **Install Claude Code Hooks** above — it's only

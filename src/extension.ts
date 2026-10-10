@@ -155,6 +155,10 @@ async function start(context: vscode.ExtensionContext): Promise<void> {
     entrypointFilter: s.entrypointFilter,
     suppressWhenFocused: s.suppressWhenFocused,
     isFocused: () => vscode.window.state.focused,
+    env: {
+      NOROSHI_WORKSPACE_NAME: vscode.workspace.name ?? folder.name,
+      NOROSHI_WORKSPACE_URI: folder.uri.toString(),
+    },
     log: (m) => output.appendLine(m),
   });
 
