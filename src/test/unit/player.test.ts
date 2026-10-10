@@ -23,6 +23,7 @@ function make(
     entrypointFilter: opts.entrypointFilter ?? [],
     suppressWhenFocused: opts.suppressWhenFocused ?? false,
     isFocused: opts.isFocused ?? (() => false),
+    env: { NOROSHI_WORKSPACE_NAME: "proj", NOROSHI_WORKSPACE_URI: "file:///w/proj" },
     log: (m) => logs.push(m),
   });
   return { runner, clock, player, logs };
@@ -33,6 +34,18 @@ describe("Player.handle", () => {
     const { runner, player } = make();
     player.handle({ event: "stop" });
     expect(runner.calls).toEqual([["afplay", "/s/done.wav"]]);
+  });
+
+  it("passes the event kind and workspace info as environment variables", () => {
+    const { runner, player } = make();
+    player.handle({ event: "notification" });
+    expect(runner.envs).toEqual([
+      {
+        NOROSHI_EVENT: "notification",
+        NOROSHI_WORKSPACE_NAME: "proj",
+        NOROSHI_WORKSPACE_URI: "file:///w/proj",
+      },
+    ]);
   });
 
   it("skips and logs an unknown event", () => {

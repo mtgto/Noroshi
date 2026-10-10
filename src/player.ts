@@ -14,6 +14,8 @@ export interface PlayerOptions {
   entrypointFilter: string[];
   suppressWhenFocused: boolean;
   isFocused: () => boolean;
+  /** Extra environment variables for the playback command (e.g. workspace info). */
+  env: Record<string, string>;
   log: (msg: string) => void;
 }
 
@@ -49,7 +51,8 @@ export class Player {
     this.lastPlayed.set(e.event, now);
 
     const [command, ...args] = buildPlayCommand(this.opts.playerCommand, file);
-    this.opts.runner.run(command, args).catch((err) => this.logError(err));
+    const env = { ...this.opts.env, NOROSHI_EVENT: e.event };
+    this.opts.runner.run(command, args, env).catch((err) => this.logError(err));
   }
 
   private logError(err: unknown): void {
