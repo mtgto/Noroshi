@@ -170,7 +170,7 @@ terminal-notifier -title "Claude Code" -subtitle "$NOROSHI_WORKSPACE_NAME" \
         "hooks": [
           {
             "type": "command",
-            "command": "printf '{\"event\":\"stop\",\"entrypoint\":\"%s\"}\\n' \"${CLAUDE_CODE_ENTRYPOINT:-unknown}\" >> \"$CLAUDE_PROJECT_DIR/.claude/noroshi-events.jsonl\"  # noroshi"
+            "command": "grep -Eq '\"background_tasks\": *\\[ *\\{' || printf '{\"event\":\"stop\",\"entrypoint\":\"%s\"}\\n' \"${CLAUDE_CODE_ENTRYPOINT:-unknown}\" >> \"$CLAUDE_PROJECT_DIR/.claude/noroshi-events.jsonl\"  # noroshi"
           }
         ]
       }
@@ -179,12 +179,13 @@ terminal-notifier -title "Claude Code" -subtitle "$NOROSHI_WORKSPACE_NAME" \
 }
 ```
 
-フックは command 文字列の完全一致で判定します。そのため `noroshi.eventsFile` を変えてから再度インストールすると、古いファイルを指すエントリが残ります。Noroshi は自分のものと断定できないエントリを削除しないためです。気になる場合は手で消せます。残っていても、誰も監視していないファイルに追記するだけで実害はありません。
+フックは command 文字列の完全一致で判定します。そのため `noroshi.eventsFile` を変えてから再度インストールすると、古いファイルを指すエントリが残ります。Noroshi は自分のものと断定できないエントリを削除しないためです。気になる場合は手で消せます。残っていても、誰も監視していないファイルに追記するだけで実害はありません。ただし、古い Noroshi が同じ `noroshi.eventsFile` 向けに書いた `Stop` のエントリだけは例外で、再度インストールすると今のコマンドに置き換えます。
 
 ### 既知の制約
 
 - **VSCode 拡張版では、`Notification` フックに Claude Code 2.1.233 以降が必要です。** それ以前は拡張版でこのフックが発火しませんでした（[anthropics/claude-code#8985](https://github.com/anthropics/claude-code/issues/8985)）。2.1.233 で許可プロンプトについて修正されています。2.1.266 の拡張版で、ツール実行の許可ダイアログ（Write）、`AskUserQuestion` の選択ダイアログ、サンドボックスの「ネットワーク接続を許可しますか?」ダイアログのいずれでも発火することを実機検証済みです。Claude Code を上げられない場合は、`PermissionRequest` も併用して拡張版に対応していた Noroshi **v0.1.0** を使ってください。
 - **拡張版では、放置しても音が鳴りません。** 「Claude is waiting for your input」の `idle_prompt` 通知はターミナル CLI では飛びますが、拡張版では 2.1.266 でも飛ばず、Noroshi に届くものがありません。許可プロンプトと `Stop` は影響を受けません。
+- **バックグラウンドのサブエージェントを使うと、余分に1回鳴ることがあります。** サブエージェントなどのバックグラウンド作業が残っている間は `Stop` フックが記録しないので、サブエージェントが終わるたびにメインのセッションが起こされても、そのターンでは鳴りません。ただ、最後の1つが終わった直後は、通知がまだキューに残っていても Claude Code がバックグラウンド作業なしと伝えることがあり（[anthropics/claude-code#102617](https://github.com/anthropics/claude-code/issues/102617)）、最後の音の直前にもう1回鳴る場合があります。`Stop` フックに `background_tasks` を渡さない Claude Code では、これまでどおりターンが終わるたびに鳴ります。
 - **v0.1.0 から更新すると `PermissionRequest` のエントリが残ります。** v0.1.0 はこれをインストールしており、Noroshi はフックのエントリを削除しないため（上記の注記を参照）そのまま残り、許可プロンプトのたびに約6秒後にもう一度音が鳴ります。`debounceMs` では到底吸収できない間隔です。`.claude/settings.json` や `.claude/settings.local.json` から手で削除してください。
 
 ## 開発に参加する

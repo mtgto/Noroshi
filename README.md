@@ -225,7 +225,7 @@ you change `noroshi.eventsFile`, update the append target to match):
         "hooks": [
           {
             "type": "command",
-            "command": "printf '{\"event\":\"stop\",\"entrypoint\":\"%s\"}\\n' \"${CLAUDE_CODE_ENTRYPOINT:-unknown}\" >> \"$CLAUDE_PROJECT_DIR/.claude/noroshi-events.jsonl\"  # noroshi"
+            "command": "grep -Eq '\"background_tasks\": *\\[ *\\{' || printf '{\"event\":\"stop\",\"entrypoint\":\"%s\"}\\n' \"${CLAUDE_CODE_ENTRYPOINT:-unknown}\" >> \"$CLAUDE_PROJECT_DIR/.claude/noroshi-events.jsonl\"  # noroshi"
           }
         ]
       }
@@ -237,7 +237,9 @@ you change `noroshi.eventsFile`, update the append target to match):
 Note that hooks are matched by their exact command, so if you change
 `noroshi.eventsFile` and install again, the entry pointing at the old file stays
 behind — Noroshi won't delete hook entries it might not own. Remove it by hand if
-you want to tidy up; a stale entry only appends to a file nobody watches.
+you want to tidy up; a stale entry only appends to a file nobody watches. The one
+exception is the `Stop` entry an older Noroshi wrote for the same
+`noroshi.eventsFile`: installing again upgrades it in place to the current command.
 
 ### Known limitations
 
@@ -253,6 +255,14 @@ you want to tidy up; a stale entry only appends to a file nobody watches.
   ("Claude is waiting for your input") fires in the terminal CLI but not in the
   extension, still true on 2.1.266 — nothing reaches Noroshi to play. Permission
   prompts and `Stop` are unaffected.
+- **Background subagents may still play one extra sound.** While background
+  work (e.g. subagents) is still running, the `Stop` hook skips recording, so the
+  main session's turn that each finished subagent wakes stays silent. Right after
+  the last one finishes, though, Claude Code can report no background work while
+  its notification is still queued
+  ([anthropics/claude-code#102617](https://github.com/anthropics/claude-code/issues/102617)),
+  so one sound may play just before the final one. A Claude Code that doesn't
+  send `background_tasks` to the `Stop` hook plays a sound on every turn end.
 - **Upgrading from v0.1.0 leaves a `PermissionRequest` entry behind.** v0.1.0
   installed one, and Noroshi never deletes hook entries (see the note above), so
   it survives and plays a second sound about six seconds after each permission

@@ -15,6 +15,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   README has a macOS example using terminal-notifier.
 - README: an example that reads the workspace name aloud with `say`.
 
+### Fixed
+
+- Stop playing the stop sound each time a background subagent finishes. The
+  `Stop` hook now skips recording while Claude Code reports pending
+  `background_tasks`. Run **Install Claude Code Hooks** again to upgrade an
+  existing `Stop` entry in place
+  ([#7](https://github.com/mtgto/Noroshi/issues/7)).
+
 ## [0.2.0] - 2026-09-10
 
 ### Changed
