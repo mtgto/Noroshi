@@ -138,6 +138,16 @@ terminal-notifier -title "Claude Code" -subtitle "$NOROSHI_WORKSPACE_NAME" \
 - マルチルートワークスペースでは `NOROSHI_WORKSPACE_URI` が 1 つ目のフォルダになるため、クリックするとウィンドウが前面に出る代わりに、そのフォルダが新しいウィンドウで開くことがあります。
 - Linux では `notify-send` で同様にバナーを出せます。
 
+### ワークスペース名を読み上げる
+
+どのワークスペースが終わったのかを耳で聞き分けられるよう、macOS の `say` でワークスペース名を読み上げます。`/bin/sh -c` を使えば、スクリプトを用意せずに `playerCommand` だけで書けます。
+
+```json
+"noroshi.playerCommand": "/bin/sh -c 'case \"$NOROSHI_EVENT\" in stop) m=\"完了\" ;; *) m=\"入力待ち\" ;; esac; say -v Kyoko \"${NOROSHI_WORKSPACE_NAME%% \\[*}$m\"'"
+```
+
+「my-project完了」のように読み上げます。`${NOROSHI_WORKSPACE_NAME%% \[*}` は、リモートのワークスペース名に VSCode が付ける ` [開発コンテナー: …]` を取り除くためのものです。Linux では `say` の代わりに `spd-say` を使えます。
+
 ### フックを手で書く
 
 上記の **Install Claude Code Hooks** を使ったなら不要で、自分で設定したい場合のためのものです。`.claude/settings.json` に以下を追加します（`noroshi.eventsFile` を変えた場合は追記先パスも合わせてください）。

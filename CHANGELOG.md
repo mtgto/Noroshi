@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   to `playerCommand` as environment variables, so it can show a desktop
   notification that brings the right VSCode window to the front on click. The
   README has a macOS example using terminal-notifier.
+- README: an example that reads the workspace name aloud with `say`.
 
 ## [0.2.0] - 2026-09-10
 

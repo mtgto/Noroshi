@@ -188,6 +188,19 @@ terminal-notifier -title "Claude Code" -subtitle "$NOROSHI_WORKSPACE_NAME" \
   clicking may open that folder in a new window instead of focusing yours.
 - On Linux, `notify-send` works the same way for the banner itself.
 
+### Read the workspace name aloud
+
+To tell by ear which workspace is done, have macOS `say` read its name. This
+fits in `playerCommand` without a script, using `/bin/sh -c`:
+
+```json
+"noroshi.playerCommand": "/bin/sh -c 'case \"$NOROSHI_EVENT\" in stop) m=\"finished\" ;; *) m=\"is waiting\" ;; esac; say \"${NOROSHI_WORKSPACE_NAME%% \\[*} $m\"'"
+```
+
+This says e.g. "my-project finished". `${NOROSHI_WORKSPACE_NAME%% \[*}` drops the
+` [Dev Container: …]` suffix VSCode adds to a remote workspace name. On Linux,
+`spd-say` works in place of `say`.
+
 ### Configuring the hook by hand
 
 You don't need this if you used **Install Claude Code Hooks** above — it's only
