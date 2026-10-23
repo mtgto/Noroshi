@@ -112,9 +112,12 @@ Releasing is manual.
 
    ```sh
    git commit -am "chore: release vX.Y.Z"
-   git tag vX.Y.Z
+   git tag -a vX.Y.Z -m vX.Y.Z
    git push origin main --follow-tags
    ```
+
+   The tag must be annotated: `--follow-tags` only pushes annotated tags, so a
+   lightweight one stays behind.
 
 5. Build the VSIX:
 
@@ -132,8 +135,10 @@ Releasing is manual.
    ```
 
    This needs an Azure DevOps personal access token with the Marketplace **Manage**
-   scope. Either register it once with `npx @vscode/vsce login mtgto`, or pass it
-   for the single command via the `VSCE_PAT` environment variable.
+   scope. Create one at <https://dev.azure.com/mtgto/_usersSettings/tokens>; it
+   expires, so make a new one there when publishing is rejected. Either register
+   it once with `npx @vscode/vsce login mtgto`, or pass it for the single command
+   via the `VSCE_PAT` environment variable.
 
 7. Create the GitHub release, attaching the VSIX and using the CHANGELOG section
    you just wrote as the notes:

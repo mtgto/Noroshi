@@ -95,9 +95,11 @@ Noroshi は `noroshi.entrypointFilter` で特定のセッション種別だけ�
 
    ```sh
    git commit -am "chore: release vX.Y.Z"
-   git tag vX.Y.Z
+   git tag -a vX.Y.Z -m vX.Y.Z
    git push origin main --follow-tags
    ```
+
+   タグは注釈付きにすること。`--follow-tags` が push するのは注釈付きのタグだけで、注釈なしのタグは残ってしまう。
 
 5. VSIX をビルドする:
 
@@ -113,7 +115,7 @@ Noroshi は `noroshi.entrypointFilter` で特定のセッション種別だけ�
    npm run publish
    ```
 
-   Marketplace の **Manage** スコープを持つ Azure DevOps の personal access token が必要。`npx @vscode/vsce login mtgto` で一度登録しておくか、`VSCE_PAT` 環境変数でその場だけ渡す。
+   Marketplace の **Manage** スコープを持つ Azure DevOps の personal access token が必要。<https://dev.azure.com/mtgto/_usersSettings/tokens> で作成する。期限があるので、公開を拒否されたらそこで作り直す。`npx @vscode/vsce login mtgto` で一度登録しておくか、`VSCE_PAT` 環境変数でその場だけ渡す。
 
 7. GitHub リリースを作る。VSIX を添付し、2 で書いた CHANGELOG の該当セクションをリリースノートにする:
 
