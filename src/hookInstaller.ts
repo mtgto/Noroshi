@@ -37,17 +37,24 @@ export type TargetChoice =
  * path) is used as-is.
  */
 export function buildHookConfig(eventsFile: string): HooksConfig {
-  const target = isAbsolutePath(eventsFile) ? eventsFile : `$CLAUDE_PROJECT_DIR/${eventsFile}`;
+  const target = hookTarget(eventsFile);
   return {
     Notification: [entry(hookCommand("notification", target))],
     Stop: [entry(hookCommand("stop", target))],
   };
 }
 
+function hookTarget(eventsFile: string): string {
+  return isAbsolutePath(eventsFile) ? eventsFile : `$CLAUDE_PROJECT_DIR/${eventsFile}`;
+}
+
 /**
  * Merge Noroshi's hooks into an existing .claude/settings(.local).json, adding only
  * what is missing and leaving everything else — other events, other tools' entries,
  * the user's own hooks — in place.
+ *
+ * An entry still carrying the command an older Noroshi wrote for the same
+ * eventsFile is upgraded in place, since that exact string can only be ours.
  *
  * Entries are matched by exact command string, so re-running after changing
  * eventsFile leaves the stale entry behind rather than guessing which entries are
@@ -83,7 +90,11 @@ export function mergeHooks(existing: string | null, eventsFile: string): MergeRe
     const command = config[event][0].hooks[0].command;
     const current = (merged[event] as unknown[] | undefined) ?? [];
     if (current.some((e) => hasCommand(e, command))) continue;
-    merged[event] = [...current, entry(command)];
+    const legacy = event === "Stop" ? legacyStopCommand(eventsFile) : null;
+    merged[event] =
+      legacy !== null && current.some((e) => hasCommand(e, legacy))
+        ? current.map((e) => replaceCommand(e, legacy, command))
+        : [...current, entry(command)];
     changed = true;
   }
   if (!changed) return { kind: "unchanged" };
@@ -157,15 +168,41 @@ function entry(command: string): HookEntry {
 }
 
 function hookCommand(kind: "notification" | "stop", target: string): string {
+  // A Stop with background work still pending is a turn that a finished subagent
+  // woke; the session will wake again, so it is not done yet. A quote inside a
+  // JSON string value is escaped, so this pattern only matches the real field
+  // with a non-empty array.
+  const guard = kind === "stop" ? `grep -Eq '"background_tasks": *\\[ *\\{' || ` : "";
+  return guard + appendCommand(kind, target);
+}
+
+function appendCommand(kind: "notification" | "stop", target: string): string {
   return (
     `printf '{"event":"${kind}","entrypoint":"%s"}\\n' ` +
     `"\${CLAUDE_CODE_ENTRYPOINT:-unknown}" >> "${target}"  # noroshi`
   );
 }
 
+/** The Stop command Noroshi v0.2.0 and earlier installed, before the background_tasks guard. */
+function legacyStopCommand(eventsFile: string): string {
+  return appendCommand("stop", hookTarget(eventsFile));
+}
+
+function replaceCommand(entry: unknown, from: string, to: string): unknown {
+  if (!isPlainObject(entry) || !Array.isArray(entry.hooks)) return entry;
+  return {
+    ...entry,
+    hooks: entry.hooks.map((h) => (isCommandHook(h, from) ? { ...h, command: to } : h)),
+  };
+}
+
 function hasCommand(entry: unknown, command: string): boolean {
   if (!isPlainObject(entry) || !Array.isArray(entry.hooks)) return false;
-  return entry.hooks.some((h) => isPlainObject(h) && h.command === command);
+  return entry.hooks.some((h) => isCommandHook(h, command));
+}
+
+function isCommandHook(hook: unknown, command: string): hook is Record<string, unknown> {
+  return isPlainObject(hook) && hook.command === command;
 }
 
 function isPlainObject(v: unknown): v is Record<string, unknown> {

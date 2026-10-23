@@ -1,4 +1,8 @@
-import { describe, it, expect } from "vitest";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, readFileSync, existsSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterAll, describe, it, expect } from "vitest";
 import {
   buildHookConfig,
   installHooksCore,
@@ -20,6 +24,20 @@ function contentOf(result: ReturnType<typeof mergeHooks>): string {
     throw new Error(`expected a written result, got ${result.kind}`);
   }
   return result.content;
+}
+
+const tempDir = mkdtempSync(join(tmpdir(), "noroshi-"));
+afterAll(() => rmSync(tempDir, { recursive: true, force: true }));
+let runCount = 0;
+
+/** Runs the Stop command with `input` on stdin and returns what it appended. */
+function runStop(input: string): string {
+  const eventsFile = join(tempDir, `events-${runCount++}.jsonl`);
+  execFileSync("/bin/sh", ["-c", commandFor("Stop", eventsFile)], {
+    input,
+    env: { CLAUDE_CODE_ENTRYPOINT: "cli" },
+  });
+  return existsSync(eventsFile) ? readFileSync(eventsFile, "utf8") : "";
 }
 
 describe("buildHookConfig", () => {
@@ -45,6 +63,29 @@ describe("buildHookConfig", () => {
     expect(commandFor("Stop", EVENTS_FILE)).toContain('"event":"stop"');
     expect(commandFor("Notification", EVENTS_FILE)).toContain('"event":"notification"');
     expect(commandFor("Stop", EVENTS_FILE)).toContain("CLAUDE_CODE_ENTRYPOINT");
+  });
+
+  it("makes the Stop command record a stop when no background work is pending", () => {
+    const line = '{"event":"stop","entrypoint":"cli"}\n';
+    expect(runStop('{"hook_event_name":"Stop","background_tasks":[]}')).toBe(line);
+    expect(runStop('{"hook_event_name":"Stop"}')).toBe(line);
+  });
+
+  // A finished background subagent wakes the main session for a turn; that turn's
+  // Stop must not play while other background work will wake it again.
+  it("makes the Stop command record nothing while background tasks are pending", () => {
+    const input =
+      '{"hook_event_name":"Stop","background_tasks":[{"id":"a1","type":"agent","status":"running"}]}';
+    expect(runStop(input)).toBe("");
+    expect(runStop('{"background_tasks": [ {"id": "a1"}]}')).toBe("");
+  });
+
+  it("makes the Stop command ignore the field name inside a message", () => {
+    const input = JSON.stringify({
+      hook_event_name: "Stop",
+      last_assistant_message: '"background_tasks":[{"id":"x"}]',
+    });
+    expect(runStop(input)).toBe('{"event":"stop","entrypoint":"cli"}\n');
   });
 });
 
@@ -118,6 +159,27 @@ describe("mergeHooks", () => {
     expect(parsed.hooks.Stop).toHaveLength(2);
     expect(parsed.hooks.Stop[0].hooks[0].command).toBe(commandFor("Stop", EVENTS_FILE));
     expect(parsed.hooks.Stop[1].hooks[0].command).toBe(commandFor("Stop", "/tmp/other.jsonl"));
+  });
+
+  it("replaces a Stop entry in the previous format instead of adding a second one", () => {
+    const legacy =
+      `printf '{"event":"stop","entrypoint":"%s"}\\n' ` +
+      `"\${CLAUDE_CODE_ENTRYPOINT:-unknown}" >> "$CLAUDE_PROJECT_DIR/${EVENTS_FILE}"  # noroshi`;
+    const existing = JSON.stringify({
+      hooks: {
+        Notification: [
+          { hooks: [{ type: "command", command: commandFor("Notification", EVENTS_FILE) }] },
+        ],
+        Stop: [
+          { hooks: [{ type: "command", command: "say done" }] },
+          { hooks: [{ type: "command", command: legacy }] },
+        ],
+      },
+    });
+    const parsed = JSON.parse(contentOf(mergeHooks(existing, EVENTS_FILE)));
+    expect(parsed.hooks.Stop).toHaveLength(2);
+    expect(parsed.hooks.Stop[0].hooks[0].command).toBe("say done");
+    expect(parsed.hooks.Stop[1].hooks[0].command).toBe(commandFor("Stop", EVENTS_FILE));
   });
 
   it("refuses to touch a file it cannot parse", () => {
